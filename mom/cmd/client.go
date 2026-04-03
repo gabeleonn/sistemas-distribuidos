@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	ampq "mom/core/amqp"
+	"mom/core/constants"
 )
 
 type ClientConfig struct {
@@ -46,6 +47,9 @@ func init() {
 func runClient(cfg *ClientConfig) error {
 	fmt.Printf("[Cliente %d] Iniciando cliente com interesse nas promocoes: %v\n", cfg.ID, cfg.Promos)
 	amqpClient := ampq.New()
+
+	defer amqpClient.Close()
+
 	queue, err := amqpClient.DeclareQueue("", false, true, true)
 
 	if err != nil {
@@ -77,7 +81,7 @@ func buildClientArgs(cmd *cobra.Command) *ClientConfig {
 	promos, _ := cmd.Flags().GetStringSlice("promos")
 
 	if len(promos) == 0 {
-		promos = append(promos, "promocao.destaques")
+		promos = append(promos, constants.EventPromotionFeatured)
 	}
 
 	return &ClientConfig{
