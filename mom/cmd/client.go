@@ -62,7 +62,11 @@ func runClient(cfg *ClientConfig) error {
 		}
 	}
 
-	deliveries, err := amqpClient.Consume(queue.Name, fmt.Sprintf("client-%d", cfg.ID))
+	deliveries, err := amqpClient.Consume(
+		queue.Name,
+		fmt.Sprintf("%d-%d", constants.ServiceClient, cfg.ID),
+	)
+
 	if err != nil {
 		return fmt.Errorf("erro ao iniciar consumo do cliente: %w", err)
 	}

@@ -1,6 +1,7 @@
 package amqp
 
 import (
+	"log"
 	"os"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -18,13 +19,13 @@ func New() *Client {
 
 	conn, err := amqp.Dial(amqpURL)
 	if err != nil {
-		panic("falha ao estabelecer conexão com o cliente: " + err.Error())
+		log.Fatal("falha ao estabelecer conexão com o cliente: ", err)
 	}
 
 	ch, err := conn.Channel()
 	if err != nil {
 		conn.Close()
-		panic("falha ao criar canal do cliente: " + err.Error())
+		log.Fatal("falha ao criar canal do cliente: ", err)
 	}
 
 	err = ch.ExchangeDeclare(
@@ -40,7 +41,7 @@ func New() *Client {
 	if err != nil {
 		ch.Close()
 		conn.Close()
-		panic("falha ao declarar exchange: " + err.Error())
+		log.Fatal("falha ao declarar exchange: ", err)
 	}
 
 	return &Client{
