@@ -14,7 +14,7 @@ var rootCmd = &cobra.Command{
 		DisableDefaultCmd: true,
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return fmt.Errorf("voce precisa informar o tipo de servico: client ou gateway")
+		return fmt.Errorf("voce precisa informar o tipo de servico")
 	},
 }
 

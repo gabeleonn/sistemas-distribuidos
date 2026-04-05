@@ -15,11 +15,10 @@ type PromotionPublishedPayload struct {
 }
 
 type PromotionVotePayload struct {
-	PromotionID string `json:"promotion_id"`
-	IsUpvote    bool   `json:"is_upvote"`
+	Promotion Promotion `json:"promotion"`
+	IsUpvote  bool      `json:"is_upvote"`
 }
 
 type PromotionFeaturedPayload struct {
 	Promotion Promotion `json:"promotion"`
-	Message   string    `json:"message"`
 }

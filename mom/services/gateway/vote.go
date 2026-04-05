@@ -45,7 +45,7 @@ func VotePromotionHandler(storage *store.PromotionStore) error {
 	}
 
 	isUpVote := voteType == "Positivo"
-	vote := buildVote(selectedPromotion.ID, isUpVote)
+	vote := buildVote(selectedPromotion, isUpVote)
 
 	envelope, err := signVote(vote)
 	if err != nil {
@@ -61,10 +61,10 @@ func VotePromotionHandler(storage *store.PromotionStore) error {
 	return nil
 }
 
-func buildVote(ID string, isUpVote bool) models.PromotionVotePayload {
+func buildVote(promotion models.Promotion, isUpVote bool) models.PromotionVotePayload {
 	return models.PromotionVotePayload{
-		PromotionID: ID,
-		IsUpvote:    isUpVote,
+		Promotion: promotion,
+		IsUpvote:  isUpVote,
 	}
 }
 
