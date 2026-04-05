@@ -1,16 +1,9 @@
 package models
 
 type Promotion struct {
-	ID          string  `json:"id"`
-	Store       string  `json:"store"`
-	Title       string  `json:"title"`
-	Description string  `json:"description"`
-	Category    string  `json:"category"`
-	Price       float64 `json:"price"`
-	Score       float64 `json:"score"`
-	Upvotes     int     `json:"upvotes"`
-	Downvotes   int     `json:"downvotes"`
-	IsHotDeal   bool    `json:"is_hot_deal"`
+	ID        string `json:"id"`
+	Category  string `json:"category"`
+	Item			string `json:"item"`
 }
 
 type PromotionReceivedPayload struct {
@@ -23,8 +16,7 @@ type PromotionPublishedPayload struct {
 
 type PromotionVotePayload struct {
 	PromotionID string `json:"promotion_id"`
-	ClientID    int    `json:"client_id"`
-	Positive    bool   `json:"positive"`
+	IsUpvote    bool   `json:"is_upvote"`
 }
 
 type PromotionFeaturedPayload struct {

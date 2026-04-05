@@ -1,10 +1,11 @@
 package amqp
 
 import (
-	"log"
 	"os"
 
 	amqp "github.com/rabbitmq/amqp091-go"
+
+	"mom/core/logger"
 )
 
 type Client struct {
@@ -19,13 +20,13 @@ func New() *Client {
 
 	conn, err := amqp.Dial(amqpURL)
 	if err != nil {
-		log.Fatal("falha ao estabelecer conexão com o cliente: ", err)
+		logger.Get().Fatalf("falha ao estabelecer conexao com o cliente: %v", err)
 	}
 
 	ch, err := conn.Channel()
 	if err != nil {
 		conn.Close()
-		log.Fatal("falha ao criar canal do cliente: ", err)
+		logger.Get().Fatalf("falha ao criar canal do cliente: %v", err)
 	}
 
 	err = ch.ExchangeDeclare(
@@ -41,7 +42,7 @@ func New() *Client {
 	if err != nil {
 		ch.Close()
 		conn.Close()
-		log.Fatal("falha ao declarar exchange: ", err)
+		logger.Get().Fatalf("falha ao declarar exchange: %v", err)
 	}
 
 	return &Client{

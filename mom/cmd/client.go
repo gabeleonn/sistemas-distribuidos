@@ -7,6 +7,7 @@ import (
 
 	ampq "mom/core/amqp"
 	"mom/core/constants"
+	"mom/core/logger"
 )
 
 type ClientConfig struct {
@@ -45,7 +46,9 @@ func init() {
 }
 
 func runClient(cfg *ClientConfig) error {
-	fmt.Printf("[Cliente %d] Iniciando cliente com interesse nas promocoes: %v\n", cfg.ID, cfg.Promos)
+	log := logger.Init(constants.ServiceClient)
+	log.Printf("iniciando cliente com interesse nas promocoes: %v", cfg.Promos)
+
 	amqpClient := ampq.New()
 
 	defer amqpClient.Close()
@@ -64,17 +67,17 @@ func runClient(cfg *ClientConfig) error {
 
 	deliveries, err := amqpClient.Consume(
 		queue.Name,
-		fmt.Sprintf("%d-%d", constants.ServiceClient, cfg.ID),
+		fmt.Sprintf("%s-%d", constants.ServiceClient, cfg.ID),
 	)
 
 	if err != nil {
 		return fmt.Errorf("erro ao iniciar consumo do cliente: %w", err)
 	}
 
-	fmt.Printf("[Cliente %d] Cliente consumidor ativo\n", cfg.ID)
+	log.Println("cliente consumidor ativo")
 
 	for delivery := range deliveries {
-		fmt.Printf("[Cliente %d] Recebida promocao [%s]: %s\n", cfg.ID, delivery.RoutingKey, string(delivery.Body))
+		log.Printf("promocao recebida [%s]: %s", delivery.RoutingKey, string(delivery.Body))
 	}
 
 	return nil

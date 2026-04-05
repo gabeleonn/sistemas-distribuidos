@@ -59,20 +59,6 @@ func (s *PromotionStore) List() []models.Promotion {
 	return promotions
 }
 
-func (s *PromotionStore) ListFeatured() []models.Promotion {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	promotions := make([]models.Promotion, 0)
-	for _, promotion := range s.promotions {
-		if promotion.IsHotDeal {
-			promotions = append(promotions, promotion)
-		}
-	}
-
-	return promotions
-}
-
 func (s *PromotionStore) Update(id string, updateFn func(*models.Promotion) error) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
