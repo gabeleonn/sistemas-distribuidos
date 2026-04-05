@@ -4,6 +4,7 @@ type Promotion struct {
 	ID        string `json:"id"`
 	Category  string `json:"category"`
 	Item			string `json:"item"`
+	HotDeal   bool   `json:"hot_deal"`
 }
 
 type PromotionReceivedPayload struct {

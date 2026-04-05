@@ -50,7 +50,7 @@ func ScoreHandler() error {
 			continue
 		}
 
-		if score == threshold {
+		if score >= threshold {
 			pkg, err := encodePromotionPublishedEvent(payload.Promotion)
 			if err != nil {
 				logger.Get().Errorf("erro ao codificar evento de promocao destacada: %v", err)
