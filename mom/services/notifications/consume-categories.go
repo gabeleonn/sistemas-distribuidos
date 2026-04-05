@@ -23,7 +23,7 @@ func HandleConsumeCategories(client *amqp.Client) error {
 		return err
 	}
 
-	deliveries, err := client.Consume(queue.Name, constants.ServiceNotification)
+	deliveries, err := client.Consume(queue.Name, constants.ServiceNotification+"-categories")
 	if err != nil {
 		return err
 	}
@@ -75,5 +75,4 @@ func parseDelivery(delivery amqp091.Delivery, payload *models.PromotionPublished
 
 	return pkg.DecodePayload(payload)
 }
-
 

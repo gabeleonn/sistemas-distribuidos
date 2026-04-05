@@ -20,7 +20,10 @@ var clientCmd = &cobra.Command{
 	Short: "Inicia o servico de cliente",
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg := buildClientArgs(cmd)
+		cfg, err := buildClientArgs(cmd)
+		if err != nil {
+			return err
+		}
 		return runClient(cfg)
 	},
 }
@@ -83,16 +86,16 @@ func runClient(cfg *ClientConfig) error {
 	return nil
 }
 
-func buildClientArgs(cmd *cobra.Command) *ClientConfig {
+func buildClientArgs(cmd *cobra.Command) (*ClientConfig, error) {
 	id, _ := cmd.Flags().GetInt("id")
 	promos, _ := cmd.Flags().GetStringSlice("promos")
 
 	if len(promos) == 0 {
-		promos = append(promos, constants.EventPromotionFeatured)
+		return nil, fmt.Errorf("lista de promocoes nao pode ser vazia")
 	}
 
 	return &ClientConfig{
 		ID:     id,
 		Promos: promos,
-	}
+	}, nil
 }

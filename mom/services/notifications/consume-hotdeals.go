@@ -23,7 +23,7 @@ func HandleConsumeHotDeals(client *amqp.Client) error {
 		return err
 	}
 
-	deliveries, err := client.Consume(queue.Name, constants.ServiceNotification)
+	deliveries, err := client.Consume(queue.Name, constants.ServiceNotification+"-hotdeals")
 	if err != nil {
 		return err
 	}
@@ -76,5 +76,4 @@ func parseHotDealDelivery(delivery amqp091.Delivery, payload *models.PromotionFe
 
 	return pkg.DecodePayload(payload)
 }
-
 

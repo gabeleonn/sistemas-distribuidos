@@ -13,13 +13,17 @@ func Start() error {
 	client := amqp.New()
 	defer client.Close()
 
-	if err := HandleConsumeCategories(client); err != nil {
-		return err
-	}
+	go func() {
+		if err := HandleConsumeCategories(client); err != nil {
+			logger.Get().Errorf("erro ao consumir categorias: %v", err)
+		}
+	}()
 
-	if err := HandleConsumeHotDeals(client); err != nil {
-		return err
-	}
+	go func() {
+		if err := HandleConsumeHotDeals(client); err != nil {
+			logger.Get().Errorf("erro ao consumir hot deals: %v", err)
+		}
+	}()
 
-	return nil
+	select {}
 }
