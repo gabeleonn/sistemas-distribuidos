@@ -15,10 +15,8 @@ import (
 )
 
 func ScoreHandler() error {
-	return nil
-}
+	logger.Init("ranking")
 
-func consumePromotionVotes() error {
 	storage := store.NewRankingStore()
 	client := amqp.New()
 	defer client.Close()
@@ -52,7 +50,7 @@ func consumePromotionVotes() error {
 			continue
 		}
 
-		if score >= threshold {
+		if score == threshold {
 			pkg, err := encodePromotionPublishedEvent(payload.Promotion)
 			if err != nil {
 				logger.Get().Errorf("erro ao codificar evento de promocao destacada: %v", err)

@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"mom/core/logger"
 	"mom/services/ranking"
 
 	"github.com/spf13/cobra"
@@ -16,7 +15,5 @@ var rankingCmd = &cobra.Command{
 }
 
 func init() {
-	logger.Init("ranking")
-
 	rootCmd.AddCommand(rankingCmd)
 }
