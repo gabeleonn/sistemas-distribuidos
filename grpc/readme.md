@@ -29,13 +29,14 @@ Implementado em Python.
 ```
 .
 ├── grpc/                          # Comunicação via gRPC
-│   └── proto/                     # Definições Protocol Buffers (IDL)
-│       └── node.proto             # Serviços e mensagens do Raft
-├── raft/                          # Implementação do algoritmo Raft
-│   ├── models/                    # Modelos de dados do sistema
-│   ├── client/                    # Cliente gRPC para interação com os nós
-│   └── readme.md                  # Documentação do módulo Raft
-└── readme.md                      # Documentação principal do projeto
+│   ├── client/                    # Cliente gRPC (interação com os nós)
+│   └── raft/                      # Implementação do Raft
+│       ├── autogen/               # Código gerado pelo protoc (stubs)
+│       ├── interfaces/            # Camada de interface (RPC ↔ domínio)
+│       ├── models/                # Modelos de dados (Node, LogEntry, etc.)
+│       ├── proto/                 # Definições Protocol Buffers
+│       └── readme.md              # Documentação do módulo Raft
+└── readme.md                      # Documentação geral
 ```
 
 ## Instalação das Dependências
