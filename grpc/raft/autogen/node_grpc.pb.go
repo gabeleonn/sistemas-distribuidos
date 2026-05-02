@@ -4,7 +4,7 @@
 // - protoc             v7.34.1
 // source: node.proto
 
-package proto
+package pb
 
 import (
 	context "context"
@@ -23,7 +23,6 @@ const (
 	RaftNode_AppendEntries_FullMethodName  = "/RaftNode/AppendEntries"
 	RaftNode_RequestVote_FullMethodName    = "/RaftNode/RequestVote"
 	RaftNode_ExecuteCommand_FullMethodName = "/RaftNode/ExecuteCommand"
-	RaftNode_StreamState_FullMethodName    = "/RaftNode/StreamState"
 )
 
 // RaftNodeClient is the client API for RaftNode service.
@@ -33,7 +32,6 @@ type RaftNodeClient interface {
 	AppendEntries(ctx context.Context, in *AppendEntriesArguments, opts ...grpc.CallOption) (*AppendEntriesReply, error)
 	RequestVote(ctx context.Context, in *RequestVoteArguments, opts ...grpc.CallOption) (*RequestVoteReply, error)
 	ExecuteCommand(ctx context.Context, in *CommandExecutionArguments, opts ...grpc.CallOption) (*CommandExecutionReply, error)
-	StreamState(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamStateReply], error)
 }
 
 type raftNodeClient struct {
@@ -74,25 +72,6 @@ func (c *raftNodeClient) ExecuteCommand(ctx context.Context, in *CommandExecutio
 	return out, nil
 }
 
-func (c *raftNodeClient) StreamState(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamStateReply], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &RaftNode_ServiceDesc.Streams[0], RaftNode_StreamState_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[emptypb.Empty, StreamStateReply]{ClientStream: stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type RaftNode_StreamStateClient = grpc.ServerStreamingClient[StreamStateReply]
-
 // RaftNodeServer is the server API for RaftNode service.
 // All implementations must embed UnimplementedRaftNodeServer
 // for forward compatibility.
@@ -100,7 +79,6 @@ type RaftNodeServer interface {
 	AppendEntries(context.Context, *AppendEntriesArguments) (*AppendEntriesReply, error)
 	RequestVote(context.Context, *RequestVoteArguments) (*RequestVoteReply, error)
 	ExecuteCommand(context.Context, *CommandExecutionArguments) (*CommandExecutionReply, error)
-	StreamState(*emptypb.Empty, grpc.ServerStreamingServer[StreamStateReply]) error
 	mustEmbedUnimplementedRaftNodeServer()
 }
 
@@ -119,9 +97,6 @@ func (UnimplementedRaftNodeServer) RequestVote(context.Context, *RequestVoteArgu
 }
 func (UnimplementedRaftNodeServer) ExecuteCommand(context.Context, *CommandExecutionArguments) (*CommandExecutionReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method ExecuteCommand not implemented")
-}
-func (UnimplementedRaftNodeServer) StreamState(*emptypb.Empty, grpc.ServerStreamingServer[StreamStateReply]) error {
-	return status.Error(codes.Unimplemented, "method StreamState not implemented")
 }
 func (UnimplementedRaftNodeServer) mustEmbedUnimplementedRaftNodeServer() {}
 func (UnimplementedRaftNodeServer) testEmbeddedByValue()                  {}
@@ -198,17 +173,6 @@ func _RaftNode_ExecuteCommand_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RaftNode_StreamState_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(emptypb.Empty)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(RaftNodeServer).StreamState(m, &grpc.GenericServerStream[emptypb.Empty, StreamStateReply]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type RaftNode_StreamStateServer = grpc.ServerStreamingServer[StreamStateReply]
-
 // RaftNode_ServiceDesc is the grpc.ServiceDesc for RaftNode service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -229,10 +193,227 @@ var RaftNode_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RaftNode_ExecuteCommand_Handler,
 		},
 	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "node.proto",
+}
+
+const (
+	RaftCluster_StreamNodesStates_FullMethodName = "/RaftCluster/StreamNodesStates"
+	RaftCluster_StreamNodeState_FullMethodName   = "/RaftCluster/StreamNodeState"
+	RaftCluster_AddNode_FullMethodName           = "/RaftCluster/AddNode"
+	RaftCluster_RemoveNode_FullMethodName        = "/RaftCluster/RemoveNode"
+)
+
+// RaftClusterClient is the client API for RaftCluster service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type RaftClusterClient interface {
+	StreamNodesStates(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamNodesStatesReply], error)
+	StreamNodeState(ctx context.Context, in *StreamNodeStateArguments, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamNodeStateReply], error)
+	AddNode(ctx context.Context, in *NodeInfoArguments, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	RemoveNode(ctx context.Context, in *NodeInfoArguments, opts ...grpc.CallOption) (*emptypb.Empty, error)
+}
+
+type raftClusterClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewRaftClusterClient(cc grpc.ClientConnInterface) RaftClusterClient {
+	return &raftClusterClient{cc}
+}
+
+func (c *raftClusterClient) StreamNodesStates(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamNodesStatesReply], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &RaftCluster_ServiceDesc.Streams[0], RaftCluster_StreamNodesStates_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[emptypb.Empty, StreamNodesStatesReply]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type RaftCluster_StreamNodesStatesClient = grpc.ServerStreamingClient[StreamNodesStatesReply]
+
+func (c *raftClusterClient) StreamNodeState(ctx context.Context, in *StreamNodeStateArguments, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamNodeStateReply], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &RaftCluster_ServiceDesc.Streams[1], RaftCluster_StreamNodeState_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[StreamNodeStateArguments, StreamNodeStateReply]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type RaftCluster_StreamNodeStateClient = grpc.ServerStreamingClient[StreamNodeStateReply]
+
+func (c *raftClusterClient) AddNode(ctx context.Context, in *NodeInfoArguments, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, RaftCluster_AddNode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *raftClusterClient) RemoveNode(ctx context.Context, in *NodeInfoArguments, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, RaftCluster_RemoveNode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// RaftClusterServer is the server API for RaftCluster service.
+// All implementations must embed UnimplementedRaftClusterServer
+// for forward compatibility.
+type RaftClusterServer interface {
+	StreamNodesStates(*emptypb.Empty, grpc.ServerStreamingServer[StreamNodesStatesReply]) error
+	StreamNodeState(*StreamNodeStateArguments, grpc.ServerStreamingServer[StreamNodeStateReply]) error
+	AddNode(context.Context, *NodeInfoArguments) (*emptypb.Empty, error)
+	RemoveNode(context.Context, *NodeInfoArguments) (*emptypb.Empty, error)
+	mustEmbedUnimplementedRaftClusterServer()
+}
+
+// UnimplementedRaftClusterServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedRaftClusterServer struct{}
+
+func (UnimplementedRaftClusterServer) StreamNodesStates(*emptypb.Empty, grpc.ServerStreamingServer[StreamNodesStatesReply]) error {
+	return status.Error(codes.Unimplemented, "method StreamNodesStates not implemented")
+}
+func (UnimplementedRaftClusterServer) StreamNodeState(*StreamNodeStateArguments, grpc.ServerStreamingServer[StreamNodeStateReply]) error {
+	return status.Error(codes.Unimplemented, "method StreamNodeState not implemented")
+}
+func (UnimplementedRaftClusterServer) AddNode(context.Context, *NodeInfoArguments) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method AddNode not implemented")
+}
+func (UnimplementedRaftClusterServer) RemoveNode(context.Context, *NodeInfoArguments) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method RemoveNode not implemented")
+}
+func (UnimplementedRaftClusterServer) mustEmbedUnimplementedRaftClusterServer() {}
+func (UnimplementedRaftClusterServer) testEmbeddedByValue()                     {}
+
+// UnsafeRaftClusterServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to RaftClusterServer will
+// result in compilation errors.
+type UnsafeRaftClusterServer interface {
+	mustEmbedUnimplementedRaftClusterServer()
+}
+
+func RegisterRaftClusterServer(s grpc.ServiceRegistrar, srv RaftClusterServer) {
+	// If the following call panics, it indicates UnimplementedRaftClusterServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&RaftCluster_ServiceDesc, srv)
+}
+
+func _RaftCluster_StreamNodesStates_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(emptypb.Empty)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(RaftClusterServer).StreamNodesStates(m, &grpc.GenericServerStream[emptypb.Empty, StreamNodesStatesReply]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type RaftCluster_StreamNodesStatesServer = grpc.ServerStreamingServer[StreamNodesStatesReply]
+
+func _RaftCluster_StreamNodeState_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(StreamNodeStateArguments)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(RaftClusterServer).StreamNodeState(m, &grpc.GenericServerStream[StreamNodeStateArguments, StreamNodeStateReply]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type RaftCluster_StreamNodeStateServer = grpc.ServerStreamingServer[StreamNodeStateReply]
+
+func _RaftCluster_AddNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NodeInfoArguments)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RaftClusterServer).AddNode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RaftCluster_AddNode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RaftClusterServer).AddNode(ctx, req.(*NodeInfoArguments))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RaftCluster_RemoveNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NodeInfoArguments)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RaftClusterServer).RemoveNode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RaftCluster_RemoveNode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RaftClusterServer).RemoveNode(ctx, req.(*NodeInfoArguments))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// RaftCluster_ServiceDesc is the grpc.ServiceDesc for RaftCluster service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var RaftCluster_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "RaftCluster",
+	HandlerType: (*RaftClusterServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "AddNode",
+			Handler:    _RaftCluster_AddNode_Handler,
+		},
+		{
+			MethodName: "RemoveNode",
+			Handler:    _RaftCluster_RemoveNode_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "StreamState",
-			Handler:       _RaftNode_StreamState_Handler,
+			StreamName:    "StreamNodesStates",
+			Handler:       _RaftCluster_StreamNodesStates_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "StreamNodeState",
+			Handler:       _RaftCluster_StreamNodeState_Handler,
 			ServerStreams: true,
 		},
 	},

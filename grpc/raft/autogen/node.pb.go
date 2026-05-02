@@ -4,7 +4,7 @@
 // 	protoc        v7.34.1
 // source: node.proto
 
-package proto
+package pb
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -63,16 +63,6 @@ func (x LogEntryCommandType) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Do not use.
-func (x *LogEntryCommandType) UnmarshalJSON(b []byte) error {
-	num, err := protoimpl.X.UnmarshalJSONEnum(x.Descriptor(), b)
-	if err != nil {
-		return err
-	}
-	*x = LogEntryCommandType(num)
-	return nil
-}
-
 // Deprecated: Use LogEntryCommandType.Descriptor instead.
 func (LogEntryCommandType) EnumDescriptor() ([]byte, []int) {
 	return file_node_proto_rawDescGZIP(), []int{0}
@@ -122,26 +112,114 @@ func (x CommandType) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Do not use.
-func (x *CommandType) UnmarshalJSON(b []byte) error {
-	num, err := protoimpl.X.UnmarshalJSONEnum(x.Descriptor(), b)
-	if err != nil {
-		return err
-	}
-	*x = CommandType(num)
-	return nil
-}
-
 // Deprecated: Use CommandType.Descriptor instead.
 func (CommandType) EnumDescriptor() ([]byte, []int) {
 	return file_node_proto_rawDescGZIP(), []int{1}
 }
 
+type NodeRole int32
+
+const (
+	NodeRole_ROLE_FOLLOWER  NodeRole = 0
+	NodeRole_ROLE_CANDIDATE NodeRole = 1
+	NodeRole_ROLE_LEADER    NodeRole = 2
+)
+
+// Enum value maps for NodeRole.
+var (
+	NodeRole_name = map[int32]string{
+		0: "ROLE_FOLLOWER",
+		1: "ROLE_CANDIDATE",
+		2: "ROLE_LEADER",
+	}
+	NodeRole_value = map[string]int32{
+		"ROLE_FOLLOWER":  0,
+		"ROLE_CANDIDATE": 1,
+		"ROLE_LEADER":    2,
+	}
+)
+
+func (x NodeRole) Enum() *NodeRole {
+	p := new(NodeRole)
+	*p = x
+	return p
+}
+
+func (x NodeRole) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (NodeRole) Descriptor() protoreflect.EnumDescriptor {
+	return file_node_proto_enumTypes[2].Descriptor()
+}
+
+func (NodeRole) Type() protoreflect.EnumType {
+	return &file_node_proto_enumTypes[2]
+}
+
+func (x NodeRole) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use NodeRole.Descriptor instead.
+func (NodeRole) EnumDescriptor() ([]byte, []int) {
+	return file_node_proto_rawDescGZIP(), []int{2}
+}
+
+type NodeStatus int32
+
+const (
+	NodeStatus_STATUS_STOPPED     NodeStatus = 0
+	NodeStatus_STATUS_RUNNING     NodeStatus = 1
+	NodeStatus_STATUS_UNREACHABLE NodeStatus = 2
+)
+
+// Enum value maps for NodeStatus.
+var (
+	NodeStatus_name = map[int32]string{
+		0: "STATUS_STOPPED",
+		1: "STATUS_RUNNING",
+		2: "STATUS_UNREACHABLE",
+	}
+	NodeStatus_value = map[string]int32{
+		"STATUS_STOPPED":     0,
+		"STATUS_RUNNING":     1,
+		"STATUS_UNREACHABLE": 2,
+	}
+)
+
+func (x NodeStatus) Enum() *NodeStatus {
+	p := new(NodeStatus)
+	*p = x
+	return p
+}
+
+func (x NodeStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (NodeStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_node_proto_enumTypes[3].Descriptor()
+}
+
+func (NodeStatus) Type() protoreflect.EnumType {
+	return &file_node_proto_enumTypes[3]
+}
+
+func (x NodeStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use NodeStatus.Descriptor instead.
+func (NodeStatus) EnumDescriptor() ([]byte, []int) {
+	return file_node_proto_rawDescGZIP(), []int{3}
+}
+
 type LogEntryCommand struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Type          *LogEntryCommandType   `protobuf:"varint,1,req,name=type,enum=LogEntryCommandType" json:"type,omitempty"`
-	Key           *string                `protobuf:"bytes,2,req,name=key" json:"key,omitempty"`
-	Value         *string                `protobuf:"bytes,3,opt,name=value" json:"value,omitempty"` // Only for SET command
+	Type          LogEntryCommandType    `protobuf:"varint,1,opt,name=type,proto3,enum=LogEntryCommandType" json:"type,omitempty"`
+	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+	Value         *string                `protobuf:"bytes,3,opt,name=value,proto3,oneof" json:"value,omitempty"` // Only for SET command
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -177,15 +255,15 @@ func (*LogEntryCommand) Descriptor() ([]byte, []int) {
 }
 
 func (x *LogEntryCommand) GetType() LogEntryCommandType {
-	if x != nil && x.Type != nil {
-		return *x.Type
+	if x != nil {
+		return x.Type
 	}
 	return LogEntryCommandType_LOG_ENTRY_COMMAND_SET
 }
 
 func (x *LogEntryCommand) GetKey() string {
-	if x != nil && x.Key != nil {
-		return *x.Key
+	if x != nil {
+		return x.Key
 	}
 	return ""
 }
@@ -199,9 +277,9 @@ func (x *LogEntryCommand) GetValue() string {
 
 type LogEntry struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Index         *int64                 `protobuf:"varint,1,req,name=index" json:"index,omitempty"`
-	Term          *int64                 `protobuf:"varint,2,req,name=term" json:"term,omitempty"`
-	Command       *LogEntryCommand       `protobuf:"bytes,3,req,name=command" json:"command,omitempty"`
+	Index         int64                  `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty"`
+	Term          int64                  `protobuf:"varint,2,opt,name=term,proto3" json:"term,omitempty"`
+	Command       *LogEntryCommand       `protobuf:"bytes,3,opt,name=command,proto3" json:"command,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -237,15 +315,15 @@ func (*LogEntry) Descriptor() ([]byte, []int) {
 }
 
 func (x *LogEntry) GetIndex() int64 {
-	if x != nil && x.Index != nil {
-		return *x.Index
+	if x != nil {
+		return x.Index
 	}
 	return 0
 }
 
 func (x *LogEntry) GetTerm() int64 {
-	if x != nil && x.Term != nil {
-		return *x.Term
+	if x != nil {
+		return x.Term
 	}
 	return 0
 }
@@ -259,12 +337,12 @@ func (x *LogEntry) GetCommand() *LogEntryCommand {
 
 type AppendEntriesArguments struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Term          *int64                 `protobuf:"varint,1,req,name=term" json:"term,omitempty"`
-	LeaderId      *int64                 `protobuf:"varint,2,req,name=leaderId" json:"leaderId,omitempty"`
-	PrevLogIndex  *int64                 `protobuf:"varint,3,req,name=prevLogIndex" json:"prevLogIndex,omitempty"`
-	PrevLogTerm   *int64                 `protobuf:"varint,4,req,name=prevLogTerm" json:"prevLogTerm,omitempty"`
-	Entries       []*LogEntry            `protobuf:"bytes,5,rep,name=entries" json:"entries,omitempty"`
-	LeaderCommit  *int64                 `protobuf:"varint,6,req,name=leaderCommit" json:"leaderCommit,omitempty"`
+	Term          int64                  `protobuf:"varint,1,opt,name=term,proto3" json:"term,omitempty"`
+	LeaderId      int64                  `protobuf:"varint,2,opt,name=leaderId,proto3" json:"leaderId,omitempty"`
+	PrevLogIndex  int64                  `protobuf:"varint,3,opt,name=prevLogIndex,proto3" json:"prevLogIndex,omitempty"`
+	PrevLogTerm   int64                  `protobuf:"varint,4,opt,name=prevLogTerm,proto3" json:"prevLogTerm,omitempty"`
+	Entries       []*LogEntry            `protobuf:"bytes,5,rep,name=entries,proto3" json:"entries,omitempty"`
+	LeaderCommit  int64                  `protobuf:"varint,6,opt,name=leaderCommit,proto3" json:"leaderCommit,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -300,29 +378,29 @@ func (*AppendEntriesArguments) Descriptor() ([]byte, []int) {
 }
 
 func (x *AppendEntriesArguments) GetTerm() int64 {
-	if x != nil && x.Term != nil {
-		return *x.Term
+	if x != nil {
+		return x.Term
 	}
 	return 0
 }
 
 func (x *AppendEntriesArguments) GetLeaderId() int64 {
-	if x != nil && x.LeaderId != nil {
-		return *x.LeaderId
+	if x != nil {
+		return x.LeaderId
 	}
 	return 0
 }
 
 func (x *AppendEntriesArguments) GetPrevLogIndex() int64 {
-	if x != nil && x.PrevLogIndex != nil {
-		return *x.PrevLogIndex
+	if x != nil {
+		return x.PrevLogIndex
 	}
 	return 0
 }
 
 func (x *AppendEntriesArguments) GetPrevLogTerm() int64 {
-	if x != nil && x.PrevLogTerm != nil {
-		return *x.PrevLogTerm
+	if x != nil {
+		return x.PrevLogTerm
 	}
 	return 0
 }
@@ -335,16 +413,16 @@ func (x *AppendEntriesArguments) GetEntries() []*LogEntry {
 }
 
 func (x *AppendEntriesArguments) GetLeaderCommit() int64 {
-	if x != nil && x.LeaderCommit != nil {
-		return *x.LeaderCommit
+	if x != nil {
+		return x.LeaderCommit
 	}
 	return 0
 }
 
 type AppendEntriesReply struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Term          *int64                 `protobuf:"varint,1,req,name=term" json:"term,omitempty"`
-	Success       *bool                  `protobuf:"varint,2,req,name=success" json:"success,omitempty"`
+	Term          int64                  `protobuf:"varint,1,opt,name=term,proto3" json:"term,omitempty"`
+	Success       bool                   `protobuf:"varint,2,opt,name=success,proto3" json:"success,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -380,25 +458,25 @@ func (*AppendEntriesReply) Descriptor() ([]byte, []int) {
 }
 
 func (x *AppendEntriesReply) GetTerm() int64 {
-	if x != nil && x.Term != nil {
-		return *x.Term
+	if x != nil {
+		return x.Term
 	}
 	return 0
 }
 
 func (x *AppendEntriesReply) GetSuccess() bool {
-	if x != nil && x.Success != nil {
-		return *x.Success
+	if x != nil {
+		return x.Success
 	}
 	return false
 }
 
 type RequestVoteArguments struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Term          *int64                 `protobuf:"varint,1,req,name=term" json:"term,omitempty"`
-	CandidateId   *int64                 `protobuf:"varint,2,req,name=candidateId" json:"candidateId,omitempty"`
-	LastLogIndex  *int64                 `protobuf:"varint,3,req,name=lastLogIndex" json:"lastLogIndex,omitempty"`
-	LastLogTerm   *int64                 `protobuf:"varint,4,req,name=lastLogTerm" json:"lastLogTerm,omitempty"`
+	Term          int64                  `protobuf:"varint,1,opt,name=term,proto3" json:"term,omitempty"`
+	CandidateId   int64                  `protobuf:"varint,2,opt,name=candidateId,proto3" json:"candidateId,omitempty"`
+	LastLogIndex  int64                  `protobuf:"varint,3,opt,name=lastLogIndex,proto3" json:"lastLogIndex,omitempty"`
+	LastLogTerm   int64                  `protobuf:"varint,4,opt,name=lastLogTerm,proto3" json:"lastLogTerm,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -434,37 +512,37 @@ func (*RequestVoteArguments) Descriptor() ([]byte, []int) {
 }
 
 func (x *RequestVoteArguments) GetTerm() int64 {
-	if x != nil && x.Term != nil {
-		return *x.Term
+	if x != nil {
+		return x.Term
 	}
 	return 0
 }
 
 func (x *RequestVoteArguments) GetCandidateId() int64 {
-	if x != nil && x.CandidateId != nil {
-		return *x.CandidateId
+	if x != nil {
+		return x.CandidateId
 	}
 	return 0
 }
 
 func (x *RequestVoteArguments) GetLastLogIndex() int64 {
-	if x != nil && x.LastLogIndex != nil {
-		return *x.LastLogIndex
+	if x != nil {
+		return x.LastLogIndex
 	}
 	return 0
 }
 
 func (x *RequestVoteArguments) GetLastLogTerm() int64 {
-	if x != nil && x.LastLogTerm != nil {
-		return *x.LastLogTerm
+	if x != nil {
+		return x.LastLogTerm
 	}
 	return 0
 }
 
 type RequestVoteReply struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Term          *int64                 `protobuf:"varint,1,req,name=term" json:"term,omitempty"`
-	VoteGranted   *bool                  `protobuf:"varint,2,req,name=voteGranted" json:"voteGranted,omitempty"`
+	Term          int64                  `protobuf:"varint,1,opt,name=term,proto3" json:"term,omitempty"`
+	VoteGranted   bool                   `protobuf:"varint,2,opt,name=voteGranted,proto3" json:"voteGranted,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -500,24 +578,24 @@ func (*RequestVoteReply) Descriptor() ([]byte, []int) {
 }
 
 func (x *RequestVoteReply) GetTerm() int64 {
-	if x != nil && x.Term != nil {
-		return *x.Term
+	if x != nil {
+		return x.Term
 	}
 	return 0
 }
 
 func (x *RequestVoteReply) GetVoteGranted() bool {
-	if x != nil && x.VoteGranted != nil {
-		return *x.VoteGranted
+	if x != nil {
+		return x.VoteGranted
 	}
 	return false
 }
 
 type CommandExecutionArguments struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Command       *CommandType           `protobuf:"varint,1,req,name=command,enum=CommandType" json:"command,omitempty"`
-	Key           *string                `protobuf:"bytes,2,req,name=key" json:"key,omitempty"`
-	Value         *string                `protobuf:"bytes,3,opt,name=value" json:"value,omitempty"`
+	Command       CommandType            `protobuf:"varint,1,opt,name=command,proto3,enum=CommandType" json:"command,omitempty"`
+	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+	Value         *string                `protobuf:"bytes,3,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -553,15 +631,15 @@ func (*CommandExecutionArguments) Descriptor() ([]byte, []int) {
 }
 
 func (x *CommandExecutionArguments) GetCommand() CommandType {
-	if x != nil && x.Command != nil {
-		return *x.Command
+	if x != nil {
+		return x.Command
 	}
 	return CommandType_COMMAND_TYPE_SET
 }
 
 func (x *CommandExecutionArguments) GetKey() string {
-	if x != nil && x.Key != nil {
-		return *x.Key
+	if x != nil {
+		return x.Key
 	}
 	return ""
 }
@@ -575,9 +653,9 @@ func (x *CommandExecutionArguments) GetValue() string {
 
 type CommandExecutionReply struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Success       *bool                  `protobuf:"varint,1,req,name=success" json:"success,omitempty"`
-	Value         *string                `protobuf:"bytes,2,opt,name=value" json:"value,omitempty"`        // For GET command
-	LeaderId      *int64                 `protobuf:"varint,3,req,name=leaderId" json:"leaderId,omitempty"` // For redirecting clients to the leader if not the current node
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Value         *string                `protobuf:"bytes,2,opt,name=value,proto3,oneof" json:"value,omitempty"`        // For GET command
+	LeaderId      *int64                 `protobuf:"varint,3,opt,name=leaderId,proto3,oneof" json:"leaderId,omitempty"` // For redirecting clients to the leader if not the current node
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -613,8 +691,8 @@ func (*CommandExecutionReply) Descriptor() ([]byte, []int) {
 }
 
 func (x *CommandExecutionReply) GetSuccess() bool {
-	if x != nil && x.Success != nil {
-		return *x.Success
+	if x != nil {
+		return x.Success
 	}
 	return false
 }
@@ -633,28 +711,27 @@ func (x *CommandExecutionReply) GetLeaderId() int64 {
 	return 0
 }
 
-type StreamStateReply struct {
+type StreamNodeStateArguments struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Term          *int64                 `protobuf:"varint,1,req,name=term" json:"term,omitempty"`
-	CommitIndex   *int64                 `protobuf:"varint,2,req,name=commitIndex" json:"commitIndex,omitempty"` // NOTE: add other fields as needed
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *StreamStateReply) Reset() {
-	*x = StreamStateReply{}
+func (x *StreamNodeStateArguments) Reset() {
+	*x = StreamNodeStateArguments{}
 	mi := &file_node_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *StreamStateReply) String() string {
+func (x *StreamNodeStateArguments) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*StreamStateReply) ProtoMessage() {}
+func (*StreamNodeStateArguments) ProtoMessage() {}
 
-func (x *StreamStateReply) ProtoReflect() protoreflect.Message {
+func (x *StreamNodeStateArguments) ProtoReflect() protoreflect.Message {
 	mi := &file_node_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -666,23 +743,220 @@ func (x *StreamStateReply) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StreamStateReply.ProtoReflect.Descriptor instead.
-func (*StreamStateReply) Descriptor() ([]byte, []int) {
+// Deprecated: Use StreamNodeStateArguments.ProtoReflect.Descriptor instead.
+func (*StreamNodeStateArguments) Descriptor() ([]byte, []int) {
 	return file_node_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *StreamStateReply) GetTerm() int64 {
-	if x != nil && x.Term != nil {
-		return *x.Term
+func (x *StreamNodeStateArguments) GetId() int64 {
+	if x != nil {
+		return x.Id
 	}
 	return 0
 }
 
-func (x *StreamStateReply) GetCommitIndex() int64 {
-	if x != nil && x.CommitIndex != nil {
-		return *x.CommitIndex
+type StreamNodeStateReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Addr          string                 `protobuf:"bytes,2,opt,name=addr,proto3" json:"addr,omitempty"`
+	Role          NodeRole               `protobuf:"varint,3,opt,name=role,proto3,enum=NodeRole" json:"role,omitempty"`
+	Term          int64                  `protobuf:"varint,4,opt,name=term,proto3" json:"term,omitempty"`
+	LeaderId      *int64                 `protobuf:"varint,5,opt,name=leaderId,proto3,oneof" json:"leaderId,omitempty"`
+	CommitIndex   int64                  `protobuf:"varint,6,opt,name=commitIndex,proto3" json:"commitIndex,omitempty"`
+	LastLogIndex  int64                  `protobuf:"varint,7,opt,name=lastLogIndex,proto3" json:"lastLogIndex,omitempty"`
+	LastApplied   int64                  `protobuf:"varint,8,opt,name=lastApplied,proto3" json:"lastApplied,omitempty"`
+	Status        NodeStatus             `protobuf:"varint,9,opt,name=status,proto3,enum=NodeStatus" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StreamNodeStateReply) Reset() {
+	*x = StreamNodeStateReply{}
+	mi := &file_node_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StreamNodeStateReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StreamNodeStateReply) ProtoMessage() {}
+
+func (x *StreamNodeStateReply) ProtoReflect() protoreflect.Message {
+	mi := &file_node_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StreamNodeStateReply.ProtoReflect.Descriptor instead.
+func (*StreamNodeStateReply) Descriptor() ([]byte, []int) {
+	return file_node_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *StreamNodeStateReply) GetId() int64 {
+	if x != nil {
+		return x.Id
 	}
 	return 0
+}
+
+func (x *StreamNodeStateReply) GetAddr() string {
+	if x != nil {
+		return x.Addr
+	}
+	return ""
+}
+
+func (x *StreamNodeStateReply) GetRole() NodeRole {
+	if x != nil {
+		return x.Role
+	}
+	return NodeRole_ROLE_FOLLOWER
+}
+
+func (x *StreamNodeStateReply) GetTerm() int64 {
+	if x != nil {
+		return x.Term
+	}
+	return 0
+}
+
+func (x *StreamNodeStateReply) GetLeaderId() int64 {
+	if x != nil && x.LeaderId != nil {
+		return *x.LeaderId
+	}
+	return 0
+}
+
+func (x *StreamNodeStateReply) GetCommitIndex() int64 {
+	if x != nil {
+		return x.CommitIndex
+	}
+	return 0
+}
+
+func (x *StreamNodeStateReply) GetLastLogIndex() int64 {
+	if x != nil {
+		return x.LastLogIndex
+	}
+	return 0
+}
+
+func (x *StreamNodeStateReply) GetLastApplied() int64 {
+	if x != nil {
+		return x.LastApplied
+	}
+	return 0
+}
+
+func (x *StreamNodeStateReply) GetStatus() NodeStatus {
+	if x != nil {
+		return x.Status
+	}
+	return NodeStatus_STATUS_STOPPED
+}
+
+type StreamNodesStatesReply struct {
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Nodes         []*StreamNodeStateReply `protobuf:"bytes,1,rep,name=nodes,proto3" json:"nodes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StreamNodesStatesReply) Reset() {
+	*x = StreamNodesStatesReply{}
+	mi := &file_node_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StreamNodesStatesReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StreamNodesStatesReply) ProtoMessage() {}
+
+func (x *StreamNodesStatesReply) ProtoReflect() protoreflect.Message {
+	mi := &file_node_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StreamNodesStatesReply.ProtoReflect.Descriptor instead.
+func (*StreamNodesStatesReply) Descriptor() ([]byte, []int) {
+	return file_node_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *StreamNodesStatesReply) GetNodes() []*StreamNodeStateReply {
+	if x != nil {
+		return x.Nodes
+	}
+	return nil
+}
+
+type NodeInfoArguments struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Addr          *string                `protobuf:"bytes,2,opt,name=addr,proto3,oneof" json:"addr,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NodeInfoArguments) Reset() {
+	*x = NodeInfoArguments{}
+	mi := &file_node_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NodeInfoArguments) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NodeInfoArguments) ProtoMessage() {}
+
+func (x *NodeInfoArguments) ProtoReflect() protoreflect.Message {
+	mi := &file_node_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NodeInfoArguments.ProtoReflect.Descriptor instead.
+func (*NodeInfoArguments) Descriptor() ([]byte, []int) {
+	return file_node_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *NodeInfoArguments) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *NodeInfoArguments) GetAddr() string {
+	if x != nil && x.Addr != nil {
+		return *x.Addr
+	}
+	return ""
 }
 
 var File_node_proto protoreflect.FileDescriptor
@@ -690,56 +964,90 @@ var File_node_proto protoreflect.FileDescriptor
 const file_node_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"node.proto\x1a\x1bgoogle/protobuf/empty.proto\"c\n" +
+	"node.proto\x1a\x1bgoogle/protobuf/empty.proto\"r\n" +
 	"\x0fLogEntryCommand\x12(\n" +
-	"\x04type\x18\x01 \x02(\x0e2\x14.LogEntryCommandTypeR\x04type\x12\x10\n" +
-	"\x03key\x18\x02 \x02(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x03 \x01(\tR\x05value\"`\n" +
+	"\x04type\x18\x01 \x01(\x0e2\x14.LogEntryCommandTypeR\x04type\x12\x10\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\x12\x19\n" +
+	"\x05value\x18\x03 \x01(\tH\x00R\x05value\x88\x01\x01B\b\n" +
+	"\x06_value\"`\n" +
 	"\bLogEntry\x12\x14\n" +
-	"\x05index\x18\x01 \x02(\x03R\x05index\x12\x12\n" +
-	"\x04term\x18\x02 \x02(\x03R\x04term\x12*\n" +
-	"\acommand\x18\x03 \x02(\v2\x10.LogEntryCommandR\acommand\"\xd7\x01\n" +
+	"\x05index\x18\x01 \x01(\x03R\x05index\x12\x12\n" +
+	"\x04term\x18\x02 \x01(\x03R\x04term\x12*\n" +
+	"\acommand\x18\x03 \x01(\v2\x10.LogEntryCommandR\acommand\"\xd7\x01\n" +
 	"\x16AppendEntriesArguments\x12\x12\n" +
-	"\x04term\x18\x01 \x02(\x03R\x04term\x12\x1a\n" +
-	"\bleaderId\x18\x02 \x02(\x03R\bleaderId\x12\"\n" +
-	"\fprevLogIndex\x18\x03 \x02(\x03R\fprevLogIndex\x12 \n" +
-	"\vprevLogTerm\x18\x04 \x02(\x03R\vprevLogTerm\x12#\n" +
+	"\x04term\x18\x01 \x01(\x03R\x04term\x12\x1a\n" +
+	"\bleaderId\x18\x02 \x01(\x03R\bleaderId\x12\"\n" +
+	"\fprevLogIndex\x18\x03 \x01(\x03R\fprevLogIndex\x12 \n" +
+	"\vprevLogTerm\x18\x04 \x01(\x03R\vprevLogTerm\x12#\n" +
 	"\aentries\x18\x05 \x03(\v2\t.LogEntryR\aentries\x12\"\n" +
-	"\fleaderCommit\x18\x06 \x02(\x03R\fleaderCommit\"B\n" +
+	"\fleaderCommit\x18\x06 \x01(\x03R\fleaderCommit\"B\n" +
 	"\x12AppendEntriesReply\x12\x12\n" +
-	"\x04term\x18\x01 \x02(\x03R\x04term\x12\x18\n" +
-	"\asuccess\x18\x02 \x02(\bR\asuccess\"\x92\x01\n" +
+	"\x04term\x18\x01 \x01(\x03R\x04term\x12\x18\n" +
+	"\asuccess\x18\x02 \x01(\bR\asuccess\"\x92\x01\n" +
 	"\x14RequestVoteArguments\x12\x12\n" +
-	"\x04term\x18\x01 \x02(\x03R\x04term\x12 \n" +
-	"\vcandidateId\x18\x02 \x02(\x03R\vcandidateId\x12\"\n" +
-	"\flastLogIndex\x18\x03 \x02(\x03R\flastLogIndex\x12 \n" +
-	"\vlastLogTerm\x18\x04 \x02(\x03R\vlastLogTerm\"H\n" +
+	"\x04term\x18\x01 \x01(\x03R\x04term\x12 \n" +
+	"\vcandidateId\x18\x02 \x01(\x03R\vcandidateId\x12\"\n" +
+	"\flastLogIndex\x18\x03 \x01(\x03R\flastLogIndex\x12 \n" +
+	"\vlastLogTerm\x18\x04 \x01(\x03R\vlastLogTerm\"H\n" +
 	"\x10RequestVoteReply\x12\x12\n" +
-	"\x04term\x18\x01 \x02(\x03R\x04term\x12 \n" +
-	"\vvoteGranted\x18\x02 \x02(\bR\vvoteGranted\"k\n" +
+	"\x04term\x18\x01 \x01(\x03R\x04term\x12 \n" +
+	"\vvoteGranted\x18\x02 \x01(\bR\vvoteGranted\"z\n" +
 	"\x19CommandExecutionArguments\x12&\n" +
-	"\acommand\x18\x01 \x02(\x0e2\f.CommandTypeR\acommand\x12\x10\n" +
-	"\x03key\x18\x02 \x02(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x03 \x01(\tR\x05value\"c\n" +
+	"\acommand\x18\x01 \x01(\x0e2\f.CommandTypeR\acommand\x12\x10\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\x12\x19\n" +
+	"\x05value\x18\x03 \x01(\tH\x00R\x05value\x88\x01\x01B\b\n" +
+	"\x06_value\"\x84\x01\n" +
 	"\x15CommandExecutionReply\x12\x18\n" +
-	"\asuccess\x18\x01 \x02(\bR\asuccess\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value\x12\x1a\n" +
-	"\bleaderId\x18\x03 \x02(\x03R\bleaderId\"H\n" +
-	"\x10StreamStateReply\x12\x12\n" +
-	"\x04term\x18\x01 \x02(\x03R\x04term\x12 \n" +
-	"\vcommitIndex\x18\x02 \x02(\x03R\vcommitIndex*N\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x19\n" +
+	"\x05value\x18\x02 \x01(\tH\x00R\x05value\x88\x01\x01\x12\x1f\n" +
+	"\bleaderId\x18\x03 \x01(\x03H\x01R\bleaderId\x88\x01\x01B\b\n" +
+	"\x06_valueB\v\n" +
+	"\t_leaderId\"*\n" +
+	"\x18StreamNodeStateArguments\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\"\xa8\x02\n" +
+	"\x14StreamNodeStateReply\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x12\n" +
+	"\x04addr\x18\x02 \x01(\tR\x04addr\x12\x1d\n" +
+	"\x04role\x18\x03 \x01(\x0e2\t.NodeRoleR\x04role\x12\x12\n" +
+	"\x04term\x18\x04 \x01(\x03R\x04term\x12\x1f\n" +
+	"\bleaderId\x18\x05 \x01(\x03H\x00R\bleaderId\x88\x01\x01\x12 \n" +
+	"\vcommitIndex\x18\x06 \x01(\x03R\vcommitIndex\x12\"\n" +
+	"\flastLogIndex\x18\a \x01(\x03R\flastLogIndex\x12 \n" +
+	"\vlastApplied\x18\b \x01(\x03R\vlastApplied\x12#\n" +
+	"\x06status\x18\t \x01(\x0e2\v.NodeStatusR\x06statusB\v\n" +
+	"\t_leaderId\"E\n" +
+	"\x16StreamNodesStatesReply\x12+\n" +
+	"\x05nodes\x18\x01 \x03(\v2\x15.StreamNodeStateReplyR\x05nodes\"E\n" +
+	"\x11NodeInfoArguments\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x17\n" +
+	"\x04addr\x18\x02 \x01(\tH\x00R\x04addr\x88\x01\x01B\a\n" +
+	"\x05_addr*N\n" +
 	"\x13LogEntryCommandType\x12\x19\n" +
 	"\x15LOG_ENTRY_COMMAND_SET\x10\x00\x12\x1c\n" +
 	"\x18LOG_ENTRY_COMMAND_DELETE\x10\x01*R\n" +
 	"\vCommandType\x12\x14\n" +
 	"\x10COMMAND_TYPE_SET\x10\x00\x12\x17\n" +
 	"\x13COMMAND_TYPE_DELETE\x10\x01\x12\x14\n" +
-	"\x10COMMAND_TYPE_GET\x10\x022\x84\x02\n" +
+	"\x10COMMAND_TYPE_GET\x10\x02*B\n" +
+	"\bNodeRole\x12\x11\n" +
+	"\rROLE_FOLLOWER\x10\x00\x12\x12\n" +
+	"\x0eROLE_CANDIDATE\x10\x01\x12\x0f\n" +
+	"\vROLE_LEADER\x10\x02*L\n" +
+	"\n" +
+	"NodeStatus\x12\x12\n" +
+	"\x0eSTATUS_STOPPED\x10\x00\x12\x12\n" +
+	"\x0eSTATUS_RUNNING\x10\x01\x12\x16\n" +
+	"\x12STATUS_UNREACHABLE\x10\x022\xc8\x01\n" +
 	"\bRaftNode\x12=\n" +
 	"\rAppendEntries\x12\x17.AppendEntriesArguments\x1a\x13.AppendEntriesReply\x127\n" +
 	"\vRequestVote\x12\x15.RequestVoteArguments\x1a\x11.RequestVoteReply\x12D\n" +
-	"\x0eExecuteCommand\x12\x1a.CommandExecutionArguments\x1a\x16.CommandExecutionReply\x12:\n" +
-	"\vStreamState\x12\x16.google.protobuf.Empty\x1a\x11.StreamStateReply0\x01B\x12Z\x10raft/proto;proto"
+	"\x0eExecuteCommand\x12\x1a.CommandExecutionArguments\x1a\x16.CommandExecutionReply2\x8d\x02\n" +
+	"\vRaftCluster\x12F\n" +
+	"\x11StreamNodesStates\x12\x16.google.protobuf.Empty\x1a\x17.StreamNodesStatesReply0\x01\x12E\n" +
+	"\x0fStreamNodeState\x12\x19.StreamNodeStateArguments\x1a\x15.StreamNodeStateReply0\x01\x125\n" +
+	"\aAddNode\x12\x12.NodeInfoArguments\x1a\x16.google.protobuf.Empty\x128\n" +
+	"\n" +
+	"RemoveNode\x12\x12.NodeInfoArguments\x1a\x16.google.protobuf.EmptyB\x11Z\x0fraft/autogen;pbb\x06proto3"
 
 var (
 	file_node_proto_rawDescOnce sync.Once
@@ -753,40 +1061,54 @@ func file_node_proto_rawDescGZIP() []byte {
 	return file_node_proto_rawDescData
 }
 
-var file_node_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_node_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_node_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_node_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_node_proto_goTypes = []any{
 	(LogEntryCommandType)(0),          // 0: LogEntryCommandType
 	(CommandType)(0),                  // 1: CommandType
-	(*LogEntryCommand)(nil),           // 2: LogEntryCommand
-	(*LogEntry)(nil),                  // 3: LogEntry
-	(*AppendEntriesArguments)(nil),    // 4: AppendEntriesArguments
-	(*AppendEntriesReply)(nil),        // 5: AppendEntriesReply
-	(*RequestVoteArguments)(nil),      // 6: RequestVoteArguments
-	(*RequestVoteReply)(nil),          // 7: RequestVoteReply
-	(*CommandExecutionArguments)(nil), // 8: CommandExecutionArguments
-	(*CommandExecutionReply)(nil),     // 9: CommandExecutionReply
-	(*StreamStateReply)(nil),          // 10: StreamStateReply
-	(*emptypb.Empty)(nil),             // 11: google.protobuf.Empty
+	(NodeRole)(0),                     // 2: NodeRole
+	(NodeStatus)(0),                   // 3: NodeStatus
+	(*LogEntryCommand)(nil),           // 4: LogEntryCommand
+	(*LogEntry)(nil),                  // 5: LogEntry
+	(*AppendEntriesArguments)(nil),    // 6: AppendEntriesArguments
+	(*AppendEntriesReply)(nil),        // 7: AppendEntriesReply
+	(*RequestVoteArguments)(nil),      // 8: RequestVoteArguments
+	(*RequestVoteReply)(nil),          // 9: RequestVoteReply
+	(*CommandExecutionArguments)(nil), // 10: CommandExecutionArguments
+	(*CommandExecutionReply)(nil),     // 11: CommandExecutionReply
+	(*StreamNodeStateArguments)(nil),  // 12: StreamNodeStateArguments
+	(*StreamNodeStateReply)(nil),      // 13: StreamNodeStateReply
+	(*StreamNodesStatesReply)(nil),    // 14: StreamNodesStatesReply
+	(*NodeInfoArguments)(nil),         // 15: NodeInfoArguments
+	(*emptypb.Empty)(nil),             // 16: google.protobuf.Empty
 }
 var file_node_proto_depIdxs = []int32{
 	0,  // 0: LogEntryCommand.type:type_name -> LogEntryCommandType
-	2,  // 1: LogEntry.command:type_name -> LogEntryCommand
-	3,  // 2: AppendEntriesArguments.entries:type_name -> LogEntry
+	4,  // 1: LogEntry.command:type_name -> LogEntryCommand
+	5,  // 2: AppendEntriesArguments.entries:type_name -> LogEntry
 	1,  // 3: CommandExecutionArguments.command:type_name -> CommandType
-	4,  // 4: RaftNode.AppendEntries:input_type -> AppendEntriesArguments
-	6,  // 5: RaftNode.RequestVote:input_type -> RequestVoteArguments
-	8,  // 6: RaftNode.ExecuteCommand:input_type -> CommandExecutionArguments
-	11, // 7: RaftNode.StreamState:input_type -> google.protobuf.Empty
-	5,  // 8: RaftNode.AppendEntries:output_type -> AppendEntriesReply
-	7,  // 9: RaftNode.RequestVote:output_type -> RequestVoteReply
-	9,  // 10: RaftNode.ExecuteCommand:output_type -> CommandExecutionReply
-	10, // 11: RaftNode.StreamState:output_type -> StreamStateReply
-	8,  // [8:12] is the sub-list for method output_type
-	4,  // [4:8] is the sub-list for method input_type
-	4,  // [4:4] is the sub-list for extension type_name
-	4,  // [4:4] is the sub-list for extension extendee
-	0,  // [0:4] is the sub-list for field type_name
+	2,  // 4: StreamNodeStateReply.role:type_name -> NodeRole
+	3,  // 5: StreamNodeStateReply.status:type_name -> NodeStatus
+	13, // 6: StreamNodesStatesReply.nodes:type_name -> StreamNodeStateReply
+	6,  // 7: RaftNode.AppendEntries:input_type -> AppendEntriesArguments
+	8,  // 8: RaftNode.RequestVote:input_type -> RequestVoteArguments
+	10, // 9: RaftNode.ExecuteCommand:input_type -> CommandExecutionArguments
+	16, // 10: RaftCluster.StreamNodesStates:input_type -> google.protobuf.Empty
+	12, // 11: RaftCluster.StreamNodeState:input_type -> StreamNodeStateArguments
+	15, // 12: RaftCluster.AddNode:input_type -> NodeInfoArguments
+	15, // 13: RaftCluster.RemoveNode:input_type -> NodeInfoArguments
+	7,  // 14: RaftNode.AppendEntries:output_type -> AppendEntriesReply
+	9,  // 15: RaftNode.RequestVote:output_type -> RequestVoteReply
+	11, // 16: RaftNode.ExecuteCommand:output_type -> CommandExecutionReply
+	14, // 17: RaftCluster.StreamNodesStates:output_type -> StreamNodesStatesReply
+	13, // 18: RaftCluster.StreamNodeState:output_type -> StreamNodeStateReply
+	16, // 19: RaftCluster.AddNode:output_type -> google.protobuf.Empty
+	16, // 20: RaftCluster.RemoveNode:output_type -> google.protobuf.Empty
+	14, // [14:21] is the sub-list for method output_type
+	7,  // [7:14] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_node_proto_init() }
@@ -794,15 +1116,20 @@ func file_node_proto_init() {
 	if File_node_proto != nil {
 		return
 	}
+	file_node_proto_msgTypes[0].OneofWrappers = []any{}
+	file_node_proto_msgTypes[6].OneofWrappers = []any{}
+	file_node_proto_msgTypes[7].OneofWrappers = []any{}
+	file_node_proto_msgTypes[9].OneofWrappers = []any{}
+	file_node_proto_msgTypes[11].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_node_proto_rawDesc), len(file_node_proto_rawDesc)),
-			NumEnums:      2,
-			NumMessages:   9,
+			NumEnums:      4,
+			NumMessages:   12,
 			NumExtensions: 0,
-			NumServices:   1,
+			NumServices:   2,
 		},
 		GoTypes:           file_node_proto_goTypes,
 		DependencyIndexes: file_node_proto_depIdxs,
