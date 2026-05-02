@@ -2,6 +2,7 @@ package cluster
 
 import (
 	pb "raft/autogen"
+	"sort"
 	"testing"
 )
 
@@ -26,17 +27,50 @@ func TestClusterStateRoundTrip(t *testing.T) {
 		t.Fatalf("expected 2 nodes, got %d", len(result.GetNodes()))
 	}
 
-	for i, node := range result.GetNodes() {
-		expected := nodes.GetNodes()[i]
+	// Sort both slices by ID before comparing (map iteration is non-deterministic)
+	resultNodes := result.GetNodes()
+	sort.Slice(resultNodes, func(i, j int) bool {
+		return resultNodes[i].GetId() < resultNodes[j].GetId()
+	})
+
+	expectedNodes := []*pb.StreamNodeStateReply{p1, p2}
+	sort.Slice(expectedNodes, func(i, j int) bool {
+		return expectedNodes[i].GetId() < expectedNodes[j].GetId()
+	})
+
+	for i, node := range resultNodes {
+		expected := expectedNodes[i]
 
 		if node.GetId() != expected.GetId() {
 			t.Errorf("id mismatch for node %d: got %d, want %d", i, node.GetId(), expected.GetId())
+		}
+		if node.GetAddr() != expected.GetAddr() {
+			t.Errorf("addr mismatch for node %d: got %s, want %s", i, node.GetAddr(), expected.GetAddr())
+		}
+		if node.GetRole() != expected.GetRole() {
+			t.Errorf("role mismatch for node %d", i)
+		}
+		if node.GetTerm() != expected.GetTerm() {
+			t.Errorf("term mismatch for node %d", i)
+		}
+		if node.GetCommitIndex() != expected.GetCommitIndex() {
+			t.Errorf("commitIndex mismatch for node %d", i)
+		}
+		if node.GetLastLogIndex() != expected.GetLastLogIndex() {
+			t.Errorf("lastLogIndex mismatch for node %d", i)
+		}
+		if node.GetLastApplied() != expected.GetLastApplied() {
+			t.Errorf("lastApplied mismatch for node %d", i)
+		}
+		if node.GetStatus() != expected.GetStatus() {
+			t.Errorf("status mismatch for node %d", i)
 		}
 	}
 }
 
 func TestNodeStateRoundTrip(t *testing.T) {
-	p := createStreamNodeStateReply(nil)
+	id := int64(42)
+	p := createStreamNodeStateReply(&id)
 
 	// Proto → Model
 	model := NodeStateFromProto(p)
@@ -44,7 +78,6 @@ func TestNodeStateRoundTrip(t *testing.T) {
 	// Model → Proto
 	result := model.ToProto()
 
-	// Validações
 	if result.GetId() != p.GetId() {
 		t.Errorf("id mismatch: got %d, want %d", result.GetId(), p.GetId())
 	}
@@ -82,18 +115,37 @@ func TestNodeStateRoundTrip(t *testing.T) {
 	}
 }
 
+func TestNodeStateRoundTripWithoutLeader(t *testing.T) {
+	id := int64(1)
+	p := &pb.StreamNodeStateReply{
+		Id:           id,
+		Addr:         "localhost:5001",
+		Role:         pb.NodeRole_ROLE_FOLLOWER,
+		Term:         1,
+		LeaderId:     nil,
+		CommitIndex:  0,
+		LastLogIndex: 0,
+		LastApplied:  0,
+		Status:       pb.NodeStatus_STATUS_RUNNING,
+	}
+
+	model := NodeStateFromProto(p)
+	result := model.ToProto()
+
+	if model.LeaderID != nil {
+		t.Errorf("expected LeaderID to be nil, got %d", *model.LeaderID)
+	}
+	if result.LeaderId != nil {
+		t.Errorf("expected proto LeaderId to be nil, got %d", *result.LeaderId)
+	}
+}
+
 func createStreamNodeStateReply(id *int64) *pb.StreamNodeStateReply {
 	leaderID := int64(2)
 
 	return &pb.StreamNodeStateReply{
-		Id: *id,
-		Addr: func() string {
-			if id != nil {
-				return "localhost:5001"
-			}
-
-			return ""
-		}(),
+		Id:           *id,
+		Addr:         "localhost:5001",
 		Role:         pb.NodeRole_ROLE_LEADER,
 		Term:         3,
 		LeaderId:     &leaderID,

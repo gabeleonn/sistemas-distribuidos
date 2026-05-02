@@ -10,8 +10,8 @@ func TestCommandRoundTrip(t *testing.T) {
 	value := "myvalue"
 
 	p := &pb.LogEntryCommand{
-		Type: pb.LogEntryCommandType(pb.CommandType_COMMAND_TYPE_SET),
-		Key:  "mykey",
+		Type:  pb.LogEntryCommandType_LOG_ENTRY_COMMAND_SET,
+		Key:   "mykey",
 		Value: &value,
 	}
 
@@ -34,7 +34,7 @@ func TestCommandRoundTrip(t *testing.T) {
 
 func TestCommandRoundTripWithoutValue(t *testing.T) {
 	p := &pb.LogEntryCommand{
-		Type: pb.LogEntryCommandType(pb.CommandType_COMMAND_TYPE_DELETE),
+		Type: pb.LogEntryCommandType_LOG_ENTRY_COMMAND_DELETE,
 		Key:  "mykey",
 	}
 
@@ -57,8 +57,8 @@ func TestCommandRoundTripWithoutValue(t *testing.T) {
 
 func TestCommandRoundTripWithNilValue(t *testing.T) {
 	p := &pb.LogEntryCommand{
-		Type: pb.LogEntryCommandType(pb.CommandType_COMMAND_TYPE_SET),
-		Key:  "mykey",
+		Type:  pb.LogEntryCommandType_LOG_ENTRY_COMMAND_SET,
+		Key:   "mykey",
 		Value: nil,
 	}
 
@@ -109,8 +109,8 @@ func TestLogEntryRoundTrip(t *testing.T) {
 		Index: 1,
 		Term:  2,
 		Command: &pb.LogEntryCommand{
-			Type: pb.LogEntryCommandType(pb.CommandType_COMMAND_TYPE_SET),
-			Key:  "mykey",
+			Type:  pb.LogEntryCommandType_LOG_ENTRY_COMMAND_SET,
+			Key:   "mykey",
 			Value: &value,
 		},
 	}

@@ -76,3 +76,44 @@ func TestAppendEntriesRequestRoundTrip(t *testing.T) {
 		}
 	}
 }
+
+func TestAppendEntriesReplyRoundTrip(t *testing.T) {
+	reply := AppendEntriesReply{
+		Term:    5,
+		Success: true,
+	}
+
+	protoReply := reply.ToProto()
+	modelReply := AppendEntriesReplyFromProto(protoReply)
+
+	if modelReply.Term != reply.Term {
+		t.Errorf("term mismatch: got %d, want %d", modelReply.Term, reply.Term)
+	}
+	if modelReply.Success != reply.Success {
+		t.Errorf("success mismatch: got %v, want %v", modelReply.Success, reply.Success)
+	}
+}
+
+func TestAppendEntriesRequestWithEmptyEntries(t *testing.T) {
+	req := AppendEntriesArguments{
+		Term:         3,
+		LeaderID:     1,
+		PrevLogIndex: 5,
+		PrevLogTerm:  2,
+		Entries:      []node.LogEntry{},
+		LeaderCommit: 4,
+	}
+
+	protoReq := req.ToProto()
+	modelReq := AppendEntriesArgumentsFromProto(protoReq)
+
+	if len(modelReq.Entries) != 0 {
+		t.Errorf("expected empty entries, got %d", len(modelReq.Entries))
+	}
+	if modelReq.PrevLogIndex != req.PrevLogIndex {
+		t.Errorf("prevLogIndex mismatch: got %d, want %d", modelReq.PrevLogIndex, req.PrevLogIndex)
+	}
+	if modelReq.LeaderCommit != req.LeaderCommit {
+		t.Errorf("leaderCommit mismatch: got %d, want %d", modelReq.LeaderCommit, req.LeaderCommit)
+	}
+}
