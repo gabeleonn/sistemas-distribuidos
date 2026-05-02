@@ -1,0 +1,75 @@
+import "google/protobuf/empty.proto";
+
+enum LogEntryType {
+  SET = 0;
+  DELETE = 1;
+}
+
+message LogEntryCommand {
+  LogEntryType type = 1;
+  string key = 2;
+  optional string value = 3; // Only for SET command
+}
+
+message LogEntry {
+  int64 index = 1;
+  int64 term = 2;
+  LogEntryCommand command = 3;
+}
+
+message AppendEntriesArguments {
+  int64 term = 1;
+  int64 leaderId = 2;
+  int64 prevLogIndex = 3;
+  int64 prevLogTerm = 4;
+  repeated LogEntry entries = 5;
+  int64 leaderCommit = 6;
+}
+
+message AppendEntriesReply {
+  int64 term = 1;
+  bool success = 2;
+}
+
+message RequestVoteArguments {
+  int64 term = 1;
+  int64 candidateId = 2;
+  int64 lastLogIndex = 3;
+  int64 lastLogTerm = 4;
+}
+
+message RequestVoteReply {
+  int64 term = 1;
+  bool voteGranted = 2;
+}
+
+enum CommandType {
+  SET = 0;
+  DELETE = 1;
+  GET = 2;
+}
+
+message CommandExecutionArguments {
+  CommandType command = 1;
+  string key = 2;
+  optional string value = 3;
+}
+
+message CommandExecutionReply {
+  bool success = 1;
+  optional string value = 2; // For GET command
+  int64 leaderId = 3; // For redirecting clients to the leader if not the current node
+}
+
+message StreamStateReply {
+  int64 term = 1;
+  int64 commitIndex = 2;
+  // NOTE: add other fields as needed
+}
+
+service RaftNode {
+  rpc AppendEntries(AppendEntriesArguments) returns (AppendEntriesReply);
+  rpc RequestVote(RequestVoteArguments) returns (RequestVoteReply);
+  rpc ExecuteCommand(CommandExecutionArguments) returns (CommandExecutionReply);
+  rpc StreamState(google.protobuf.Empty) returns (stream StreamStateReply);
+}
