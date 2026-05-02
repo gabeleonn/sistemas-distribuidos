@@ -18,13 +18,25 @@ Responsável pelo bootstrap do cluster: criação, inicialização e finalizaç�
 Também mantém informações globais, como quantidade de nós, atribuição de IDs, portas e operações de reset.
 Além disso, atua como camada de observabilidade, consumindo o estado dos nós (via streaming) para fins de debug e inspeção do sistema.
 
-Implementado usando <WIP>.
+Implementado em Go.
 
 ### Raft Client
 Cliente responsável por interagir com os nós, enviando comandos para a key-value store e lidando com redirecionamentos para o líder.
 
+Implementado em Python.
+
 ## Pastas
-WIP
+```
+.
+├── grpc/                          # Comunicação via gRPC
+│   └── proto/                     # Definições Protocol Buffers (IDL)
+│       └── node.proto             # Serviços e mensagens do Raft
+├── raft/                          # Implementação do algoritmo Raft
+│   ├── models/                    # Modelos de dados do sistema
+│   ├── client/                    # Cliente gRPC para interação com os nós
+│   └── readme.md                  # Documentação do módulo Raft
+└── readme.md                      # Documentação principal do projeto
+```
 
 ## Instalação das Dependências
 WIP
