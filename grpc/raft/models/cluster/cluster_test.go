@@ -2,68 +2,53 @@ package cluster
 
 import (
 	pb "raft/autogen"
-	"sort"
+	"raft/models/node"
 	"testing"
 )
 
 func TestClusterStateRoundTrip(t *testing.T) {
-	p1id := int64(0)
-	p2id := int64(1)
+	n1 := node.NewNode(0, "localhost:5001")
+	n2 := node.NewNode(1, "localhost:5002")
 
-	p1 := createStreamNodeStateReply(&p1id)
-	p2 := createStreamNodeStateReply(&p2id)
-
-	// Proto → Model
-	nodes := &pb.StreamNodesStatesReply{
-		Nodes: []*pb.StreamNodeStateReply{p1, p2},
+	model := State{
+		Nodes: map[int64]*node.Node{
+			0: n1,
+			1: n2,
+		},
 	}
 
-	model := StateFromProto(nodes)
-
-	// Model → Proto
 	result := model.ToProto()
 
 	if len(result.GetNodes()) != 2 {
 		t.Fatalf("expected 2 nodes, got %d", len(result.GetNodes()))
 	}
 
-	// Sort both slices by ID before comparing (map iteration is non-deterministic)
-	resultNodes := result.GetNodes()
-	sort.Slice(resultNodes, func(i, j int) bool {
-		return resultNodes[i].GetId() < resultNodes[j].GetId()
-	})
+	resultMap := make(map[int64]*pb.StreamNodeStateReply)
+	for _, n := range result.GetNodes() {
+		resultMap[n.GetId()] = n
+	}
 
-	expectedNodes := []*pb.StreamNodeStateReply{p1, p2}
-	sort.Slice(expectedNodes, func(i, j int) bool {
-		return expectedNodes[i].GetId() < expectedNodes[j].GetId()
-	})
-
-	for i, node := range resultNodes {
-		expected := expectedNodes[i]
-
-		if node.GetId() != expected.GetId() {
-			t.Errorf("id mismatch for node %d: got %d, want %d", i, node.GetId(), expected.GetId())
+	for _, n := range []*node.Node{n1, n2} {
+		ns := n.ToNodeState()
+		got, ok := resultMap[ns.ID]
+		if !ok {
+			t.Errorf("node %d not found in result", ns.ID)
+			continue
 		}
-		if node.GetAddr() != expected.GetAddr() {
-			t.Errorf("addr mismatch for node %d: got %s, want %s", i, node.GetAddr(), expected.GetAddr())
+		if got.GetAddr() != ns.Addr {
+			t.Errorf("addr mismatch for node %d: got %s, want %s", ns.ID, got.GetAddr(), ns.Addr)
 		}
-		if node.GetRole() != expected.GetRole() {
-			t.Errorf("role mismatch for node %d", i)
+		if got.GetRole() != pb.NodeRole(ns.Role) {
+			t.Errorf("role mismatch for node %d", ns.ID)
 		}
-		if node.GetTerm() != expected.GetTerm() {
-			t.Errorf("term mismatch for node %d", i)
+		if got.GetTerm() != ns.Term {
+			t.Errorf("term mismatch for node %d", ns.ID)
 		}
-		if node.GetCommitIndex() != expected.GetCommitIndex() {
-			t.Errorf("commitIndex mismatch for node %d", i)
+		if got.GetCommitIndex() != ns.CommitIndex {
+			t.Errorf("commitIndex mismatch for node %d", ns.ID)
 		}
-		if node.GetLastLogIndex() != expected.GetLastLogIndex() {
-			t.Errorf("lastLogIndex mismatch for node %d", i)
-		}
-		if node.GetLastApplied() != expected.GetLastApplied() {
-			t.Errorf("lastApplied mismatch for node %d", i)
-		}
-		if node.GetStatus() != expected.GetStatus() {
-			t.Errorf("status mismatch for node %d", i)
+		if got.GetStatus() != pb.NodeStatus(ns.Status) {
+			t.Errorf("status mismatch for node %d", ns.ID)
 		}
 	}
 }
