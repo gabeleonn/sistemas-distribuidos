@@ -1,49 +1,141 @@
 package log
 
 import (
+	pb "raft/autogen"
 	"raft/models/utils"
 	"testing"
 )
 
-func TestCommandSetRoundTrip(t *testing.T) {
-	original := Command{
-		Type:  SET,
-		Key:   "testKey",
-		Value: utils.GetPtrFromString("testValue"),
+func TestCommandRoundTrip(t *testing.T) {
+	value := "myvalue"
+
+	p := &pb.LogEntryCommand{
+		Type:  pb.LogEntryCommandType_LOG_ENTRY_COMMAND_SET,
+		Key:   "mykey",
+		Value: &value,
 	}
 
-	protoCmd := original.ToProto()
-	converted := CommandFromProto(protoCmd)
+	model := CommandFromProto(p)
 
-	if original.Type != converted.Type {
-		t.Errorf("Expected Type %v, got %v", original.Type, converted.Type)
+	result := model.ToProto()
+
+	if result.GetType() != p.GetType() {
+		t.Errorf("type mismatch")
 	}
-	if original.Key != converted.Key {
-		t.Errorf("Expected Key %s, got %s", original.Key, converted.Key)
+
+	if result.GetKey() != p.GetKey() {
+		t.Errorf("key mismatch: got %s, want %s", result.GetKey(), p.GetKey())
 	}
-	if (original.Value == nil) != (converted.Value == nil) {
-		t.Errorf("Expected Value nil status %v, got %v", original.Value == nil, converted.Value == nil)
-	} else if original.Value != nil && *original.Value != *converted.Value {
-		t.Errorf("Expected Value %s, got %s", *original.Value, *converted.Value)
+
+	if result.GetValue() != utils.GetStringFromPtr(p.Value) {
+		t.Errorf("value mismatch: got empty, want %s", *p.Value)
 	}
 }
 
-func TestCommandDeleteRoundTrip(t *testing.T) {
-	original := Command{
-		Type: DELETE,
-		Key:  "testKey",
+func TestCommandRoundTripWithoutValue(t *testing.T) {
+	p := &pb.LogEntryCommand{
+		Type: pb.LogEntryCommandType_LOG_ENTRY_COMMAND_DELETE,
+		Key:  "mykey",
 	}
 
-	protoCmd := original.ToProto()
-	converted := CommandFromProto(protoCmd)
+	model := CommandFromProto(p)
 
-	if original.Type != converted.Type {
-		t.Errorf("Expected Type %v, got %v", original.Type, converted.Type)
+	result := model.ToProto()
+
+	if result.GetType() != p.GetType() {
+		t.Errorf("type mismatch")
 	}
-	if original.Key != converted.Key {
-		t.Errorf("Expected Key %s, got %s", original.Key, converted.Key)
+
+	if result.GetKey() != p.GetKey() {
+		t.Errorf("key mismatch: got %s, want %s", result.GetKey(), p.GetKey())
 	}
-	if converted.Value != nil {
-		t.Errorf("Expected Value nil, got %v", *converted.Value)
+
+	if result.Value != nil {
+		t.Errorf("expected value to be nil, got %s", *result.Value)
+	}
+}
+
+func TestCommandRoundTripWithNilValue(t *testing.T) {
+	p := &pb.LogEntryCommand{
+		Type:  pb.LogEntryCommandType_LOG_ENTRY_COMMAND_SET,
+		Key:   "mykey",
+		Value: nil,
+	}
+
+	model := CommandFromProto(p)
+
+	result := model.ToProto()
+
+	if result.GetType() != p.GetType() {
+		t.Errorf("type mismatch")
+	}
+
+	if result.GetKey() != p.GetKey() {
+		t.Errorf("key mismatch: got %s, want %s", result.GetKey(), p.GetKey())
+	}
+
+	if result.Value != nil {
+		t.Errorf("expected value to be nil, got %s", *result.Value)
+	}
+}
+
+func TestCommandTypeMapping(t *testing.T) {
+	tests := []struct {
+		proto pb.LogEntryCommandType
+		model CommandType
+	}{
+		{pb.LogEntryCommandType_LOG_ENTRY_COMMAND_SET, SET},
+		{pb.LogEntryCommandType_LOG_ENTRY_COMMAND_DELETE, DELETE},
+	}
+
+	for _, tt := range tests {
+		p := &pb.LogEntryCommand{
+			Type: tt.proto,
+			Key:  "testkey",
+		}
+
+		model := CommandFromProto(p)
+
+		if model.Type != tt.model {
+			t.Errorf("mapping mismatch: got %v, want %v", model.Type, tt.model)
+		}
+	}
+}
+
+func TestLogEntryRoundTrip(t *testing.T) {
+	value := "myvalue"
+
+	p := &pb.LogEntry{
+		Index: 1,
+		Term:  2,
+		Command: &pb.LogEntryCommand{
+			Type:  pb.LogEntryCommandType_LOG_ENTRY_COMMAND_SET,
+			Key:   "mykey",
+			Value: &value,
+		},
+	}
+
+	model := LogEntryFromProto(p)
+
+	result := model.ToProto()
+
+	if result.GetIndex() != p.GetIndex() {
+		t.Errorf("index mismatch")
+	}
+
+	if result.GetTerm() != p.GetTerm() {
+		t.Errorf("term mismatch")
+	}
+
+	if result.GetCommand().GetType() != p.GetCommand().GetType() {
+		t.Errorf("command type mismatch")
+	}
+
+	if result.GetCommand().GetKey() != p.GetCommand().GetKey() {
+		t.Errorf("command key mismatch: got %s, want %s", result.GetCommand().GetKey(), p.GetCommand().GetKey())
+	}
+
+	if result.GetCommand().GetValue() != utils.GetStringFromPtr(p.GetCommand().Value) {
+		t.Errorf("command value mismatch: got empty, want %s", *p.GetCommand().Value)
 	}
 }
