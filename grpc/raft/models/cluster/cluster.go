@@ -5,6 +5,11 @@ import (
 	"raft/models/node"
 )
 
+type Metadata struct {
+	ID   int64
+	Addr string
+}
+
 // NodeStatus represents the status of a node in the cluster.
 type NodeStatus int
 
@@ -17,7 +22,7 @@ const (
 
 // Cluster represents the state of the Raft cluster, including the metadata of all nodes and their current states.
 type Cluster struct {
-	Nodes map[int64]node.Metadata
+	Nodes map[int64]Metadata
 }
 
 // State represents the current state of the cluster, including the state of each node.

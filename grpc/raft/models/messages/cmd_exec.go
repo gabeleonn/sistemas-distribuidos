@@ -2,12 +2,12 @@ package messages
 
 import (
 	pb "raft/autogen"
-	"raft/models/node"
+	"raft/models/log"
 )
 
 // CommandExecutionArguments represents the arguments for a CommandExecution RPC call.
 type CommandExecutionArguments struct {
-	Command node.Command
+	Command log.Command
 }
 
 // CommandExecutionReply is the response to a CommandExecution RPC call.
@@ -34,8 +34,8 @@ func CommandExecutionArgumentsFromProto(p *pb.CommandExecutionArguments) Command
 	}
 
 	return CommandExecutionArguments{
-		Command: node.Command{
-			Type:  node.CommandType(p.GetCommand()),
+		Command: log.Command{
+			Type:  log.CommandType(p.GetCommand()),
 			Key:   p.GetKey(),
 			Value: value,
 		},

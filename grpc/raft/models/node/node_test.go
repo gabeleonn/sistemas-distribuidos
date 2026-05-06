@@ -2,6 +2,7 @@ package node
 
 import (
 	pb "raft/autogen"
+	"raft/models/log"
 	"raft/models/utils"
 	"testing"
 )
@@ -15,7 +16,7 @@ func TestCommandRoundTrip(t *testing.T) {
 		Value: &value,
 	}
 
-	model := CommandFromProto(p)
+	model := log.CommandFromProto(p)
 
 	result := model.ToProto()
 
@@ -38,7 +39,7 @@ func TestCommandRoundTripWithoutValue(t *testing.T) {
 		Key:  "mykey",
 	}
 
-	model := CommandFromProto(p)
+	model := log.CommandFromProto(p)
 
 	result := model.ToProto()
 
@@ -62,7 +63,7 @@ func TestCommandRoundTripWithNilValue(t *testing.T) {
 		Value: nil,
 	}
 
-	model := CommandFromProto(p)
+	model := log.CommandFromProto(p)
 
 	result := model.ToProto()
 
@@ -82,10 +83,10 @@ func TestCommandRoundTripWithNilValue(t *testing.T) {
 func TestCommandTypeMapping(t *testing.T) {
 	tests := []struct {
 		proto pb.LogEntryCommandType
-		model CommandType
+		model log.CommandType
 	}{
-		{pb.LogEntryCommandType_LOG_ENTRY_COMMAND_SET, SET},
-		{pb.LogEntryCommandType_LOG_ENTRY_COMMAND_DELETE, DELETE},
+		{pb.LogEntryCommandType_LOG_ENTRY_COMMAND_SET, log.SET},
+		{pb.LogEntryCommandType_LOG_ENTRY_COMMAND_DELETE, log.DELETE},
 	}
 
 	for _, tt := range tests {
@@ -94,7 +95,7 @@ func TestCommandTypeMapping(t *testing.T) {
 			Key:  "testkey",
 		}
 
-		model := CommandFromProto(p)
+		model := log.CommandFromProto(p)
 
 		if model.Type != tt.model {
 			t.Errorf("mapping mismatch: got %v, want %v", model.Type, tt.model)
@@ -115,7 +116,7 @@ func TestLogEntryRoundTrip(t *testing.T) {
 		},
 	}
 
-	model := LogEntryFromProto(p)
+	model := log.LogEntryFromProto(p)
 
 	result := model.ToProto()
 

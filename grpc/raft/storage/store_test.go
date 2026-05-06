@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"raft/models/node"
+	"raft/models/log"
 	"testing"
 )
 
@@ -20,8 +20,8 @@ func TestKeyValueStoreGet(t *testing.T) {
 
 func TestKeyValueStoreApplySet(t *testing.T) {
 	store := KeyValueStore
-	cmd := node.Command{
-		Type:  node.SET,
+	cmd := log.Command{
+		Type:  log.SET,
 		Key:   "key2",
 		Value: func() *string { v := "value2"; return &v }(),
 	}
@@ -44,8 +44,8 @@ func TestKeyValueStoreApplyDelete(t *testing.T) {
 	store := KeyValueStore
 	store.set("key3", "value3")
 
-	cmd := node.Command{
-		Type: node.DELETE,
+	cmd := log.Command{
+		Type: log.DELETE,
 		Key:  "key3",
 	}
 

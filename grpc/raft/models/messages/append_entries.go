@@ -2,7 +2,7 @@ package messages
 
 import (
 	pb "raft/autogen"
-	"raft/models/node"
+	"raft/models/log"
 )
 
 // AppendEntriesArguments represents the arguments for an AppendEntries RPC call.
@@ -11,7 +11,7 @@ type AppendEntriesArguments struct {
 	LeaderID     int64
 	PrevLogIndex int64
 	PrevLogTerm  int64
-	Entries      []node.LogEntry
+	Entries      []log.LogEntry
 	LeaderCommit int64
 }
 
@@ -40,9 +40,9 @@ func (r AppendEntriesArguments) ToProto() *pb.AppendEntriesArguments {
 
 // AppendEntriesArgumentsFromProto converts a protobuf AppendEntriesArguments to its model representation.
 func AppendEntriesArgumentsFromProto(p *pb.AppendEntriesArguments) AppendEntriesArguments {
-	entries := make([]node.LogEntry, len(p.GetEntries()))
+	entries := make([]log.LogEntry, len(p.GetEntries()))
 	for i, entry := range p.GetEntries() {
-		entries[i] = node.LogEntryFromProto(entry)
+		entries[i] = log.LogEntryFromProto(entry)
 	}
 
 	return AppendEntriesArguments{

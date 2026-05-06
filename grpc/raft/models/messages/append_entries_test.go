@@ -1,7 +1,7 @@
 package messages
 
 import (
-	"raft/models/node"
+	"raft/models/log"
 	"raft/models/utils"
 
 	"testing"
@@ -13,20 +13,20 @@ func TestAppendEntriesRequestRoundTrip(t *testing.T) {
 		LeaderID:     123,
 		PrevLogIndex: 0,
 		PrevLogTerm:  0,
-		Entries: []node.LogEntry{
+		Entries: []log.LogEntry{
 			{
 				Index: 1,
 				Term:  1,
-				Command: node.Command{
-					Type: node.SET,
+				Command: log.Command{
+					Type: log.SET,
 					Key:  "key1", Value: utils.GetPtrFromString("value1"),
 				},
 			},
 			{
 				Index: 2,
 				Term:  1,
-				Command: node.Command{
-					Type: node.DELETE,
+				Command: log.Command{
+					Type: log.DELETE,
 					Key:  "key2", Value: nil,
 				},
 			},
@@ -64,13 +64,23 @@ func TestAppendEntriesRequestRoundTrip(t *testing.T) {
 			t.Errorf("entry %d term mismatch: got %d, want %d", i, entry.Term, req.Entries[i].Term)
 		}
 		if entry.Command.Type != req.Entries[i].Command.Type {
-			t.Errorf("entry %d command type mismatch: got %v, want %v", i, entry.Command.Type, req.Entries[i].Command.Type)
+			t.Errorf(
+				"entry %d command type mismatch: got %v, want %v",
+				i,
+				entry.Command.Type,
+				req.Entries[i].Command.Type,
+			)
 		}
 		if entry.Command.Key != req.Entries[i].Command.Key {
 			t.Errorf("entry %d command key mismatch: got %s, want %s", i, entry.Command.Key, req.Entries[i].Command.Key)
 		}
 		if (entry.Command.Value == nil) != (req.Entries[i].Command.Value == nil) {
-			t.Errorf("entry %d command value nil mismatch: got %v, want %v", i, entry.Command.Value == nil, req.Entries[i].Command.Value == nil)
+			t.Errorf(
+				"entry %d command value nil mismatch: got %v, want %v",
+				i,
+				entry.Command.Value == nil,
+				req.Entries[i].Command.Value == nil,
+			)
 		} else if entry.Command.Value != nil && *entry.Command.Value != *req.Entries[i].Command.Value {
 			t.Errorf("entry %d command value mismatch: got %s, want %s", i, *entry.Command.Value, *req.Entries[i].Command.Value)
 		}
@@ -100,7 +110,7 @@ func TestAppendEntriesRequestWithEmptyEntries(t *testing.T) {
 		LeaderID:     1,
 		PrevLogIndex: 5,
 		PrevLogTerm:  2,
-		Entries:      []node.LogEntry{},
+		Entries:      []log.LogEntry{},
 		LeaderCommit: 4,
 	}
 

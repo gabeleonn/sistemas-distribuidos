@@ -2,14 +2,14 @@ package messages
 
 import (
 	pb "raft/autogen"
-	"raft/models/node"
+	"raft/models/log"
 	"testing"
 )
 
 func TestCommandExecutionArgumentsToProto(t *testing.T) {
 	cmd := CommandExecutionArguments{
-		Command: node.Command{
-			Type:  node.SET,
+		Command: log.Command{
+			Type:  log.SET,
 			Key:   "testKey",
 			Value: func() *string { v := "testValue"; return &v }(),
 		},
@@ -17,8 +17,8 @@ func TestCommandExecutionArgumentsToProto(t *testing.T) {
 
 	protoCmd := cmd.ToProto()
 
-	if protoCmd.GetCommand() != pb.CommandType(node.SET) {
-		t.Errorf("command type mismatch: got %v, want %v", protoCmd.GetCommand(), pb.CommandType(node.SET))
+	if protoCmd.GetCommand() != pb.CommandType(log.SET) {
+		t.Errorf("command type mismatch: got %v, want %v", protoCmd.GetCommand(), pb.CommandType(log.SET))
 	}
 	if protoCmd.GetKey() != "testKey" {
 		t.Errorf("key mismatch: got %s, want %s", protoCmd.GetKey(), "testKey")
@@ -31,8 +31,8 @@ func TestCommandExecutionArgumentsToProto(t *testing.T) {
 func TestCommandExecutionArgumentsRoundTrip(t *testing.T) {
 	value := "testValue"
 	cmd := CommandExecutionArguments{
-		Command: node.Command{
-			Type:  node.SET,
+		Command: log.Command{
+			Type:  log.SET,
 			Key:   "testKey",
 			Value: &value,
 		},
@@ -54,8 +54,8 @@ func TestCommandExecutionArgumentsRoundTrip(t *testing.T) {
 
 func TestCommandExecutionArgumentsRoundTripWithoutValue(t *testing.T) {
 	cmd := CommandExecutionArguments{
-		Command: node.Command{
-			Type:  node.DELETE,
+		Command: log.Command{
+			Type:  log.DELETE,
 			Key:   "testKey",
 			Value: nil,
 		},

@@ -2,7 +2,7 @@ package storage
 
 import (
 	"errors"
-	"raft/models/node"
+	"raft/models/log"
 	"sync"
 )
 
@@ -18,14 +18,14 @@ var KeyValueStore = &KeyValueStoreType{
 }
 
 // Apply applies a committed log entry command to the state machine.
-func (kv *KeyValueStoreType) Apply(cmd node.Command) error {
+func (kv *KeyValueStoreType) Apply(cmd log.Command) error {
 	switch cmd.Type {
-	case node.SET:
+	case log.SET:
 		if cmd.Value == nil {
 			return errors.New("SET command requires a value")
 		}
 		kv.set(cmd.Key, *cmd.Value)
-	case node.DELETE:
+	case log.DELETE:
 		kv.delete(cmd.Key)
 	default:
 		return errors.New("unknown command type")
