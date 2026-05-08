@@ -162,6 +162,15 @@ func (n *Node) BecomeLeader() int64 {
 	return n.currentTerm
 }
 
+func (n *Node) BecomeFollower(term int64) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+
+	n.role = Follower
+	n.currentTerm = term
+	n.votedFor = nil
+}
+
 /*
 ========================================== gRPC Handlers ==========================================
 */
@@ -204,6 +213,37 @@ func (n *Node) CandidateRequest() RequestVoteRequest {
 	return RequestVoteRequest{
 		Term:        n.currentTerm,
 		CandidateID: n.id,
+	}
+}
+
+func (n *Node) AppendEntriesResponse(req AppendEntriesRequest) AppendEntriesResponse {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+
+	if req.Term < n.currentTerm {
+		return AppendEntriesResponse{
+			Term:    n.currentTerm,
+			Success: false,
+		}
+	}
+
+	if req.Term > n.currentTerm {
+		n.currentTerm = req.Term
+		n.votedFor = nil
+	}
+
+	n.role = Follower
+
+	return AppendEntriesResponse{
+		Term:    n.currentTerm,
+		Success: true,
+	}
+}
+
+func (n *Node) AppendEntriesRequest() AppendEntriesRequest {
+	return AppendEntriesRequest{
+		Term:     n.currentTerm,
+		LeaderID: n.id,
 	}
 }
 

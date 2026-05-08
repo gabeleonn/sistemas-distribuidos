@@ -7,26 +7,22 @@ import (
 	"log/slog"
 )
 
-// NodeService implements the gRPC service for handling requests related to a Raft node,
-// such as pinging the node to check if it's alive and responding with its ID.
 type NodeService struct {
 	proto.UnimplementedNodeServer
 
-	node   *raft.Node
-	logger *slog.Logger
+	node        *raft.Node
+	logger      *slog.Logger
+	onHeartbeat func()
 }
 
-// NewNodeService creates a new instance of the NodeService, which implements the NodeServer
-// interface and can be registered with the gRPC server to handle incoming requests.
-func NewNodeService(node *raft.Node, logger *slog.Logger) *NodeService {
+func NewNodeService(node *raft.Node, logger *slog.Logger, onHeartbeat func()) *NodeService {
 	return &NodeService{
-		node:   node,
-		logger: logger,
+		node:        node,
+		logger:      logger,
+		onHeartbeat: onHeartbeat,
 	}
 }
 
-// Ping responds to a ping request with a pong message and the ID of the node,
-// allowing clients to check if the node is alive and get its ID.
 func (s *NodeService) Ping(ctx context.Context, req *proto.PingRequest) (*proto.PingResponse, error) {
 	return &proto.PingResponse{
 		Message: "pong",
@@ -34,9 +30,6 @@ func (s *NodeService) Ping(ctx context.Context, req *proto.PingRequest) (*proto.
 	}, nil
 }
 
-// RequestVote handles incoming RequestVote RPCs from other nodes in the cluster,
-// allowing the node to participate in leader elections by granting or denying votes
-// based on its current state and the information provided in the request.
 func (s *NodeService) RequestVote(
 	ctx context.Context,
 	req *proto.RequestVoteRequest,
@@ -45,4 +38,18 @@ func (s *NodeService) RequestVote(
 	vote := s.node.CandidateResponse(*request)
 
 	return vote.ToProto(), nil
+}
+
+func (s *NodeService) AppendEntries(
+	ctx context.Context,
+	req *proto.AppendEntriesRequest,
+) (*proto.AppendEntriesResponse, error) {
+	request := raft.AppendEntriesRequestFromProto(req)
+	response := s.node.AppendEntriesResponse(*request)
+
+	if response.Success {
+		s.onHeartbeat()
+	}
+
+	return response.ToProto(), nil
 }

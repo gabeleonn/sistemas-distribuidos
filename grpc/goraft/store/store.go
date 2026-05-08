@@ -20,7 +20,7 @@ func (s *Store) Apply(cmd raft.Command) error {
 			return fmt.Errorf("SET command requires a value")
 		}
 		s.set(cmd.Key, *cmd.Value)
-	case raft.DELETE:
+	case raft.DEL:
 		s.delete(cmd.Key)
 	default:
 		return fmt.Errorf("unknown command type: %v", cmd.Type)

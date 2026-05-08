@@ -31,10 +31,14 @@ type Application struct {
 	server   *grpc.Server
 	listener net.Listener
 	node     *raft.Node
+
+	heartbeat chan struct{}
 }
 
 /*
+==========================================================================================================
 ========================================== Core Functionalities ==========================================
+==========================================================================================================
 */
 func (app *Application) Run(ctx context.Context) error {
 	if err := app.openPeerConnections(); err != nil {
@@ -179,7 +183,9 @@ func (app *Application) shutdown() {
 }
 
 /*
+===============================================================================================
 ========================================== Lifecycle ==========================================
+===============================================================================================
 */
 
 func (app *Application) runRaftLifecycle(ctx context.Context) {
@@ -190,9 +196,9 @@ func (app *Application) runRaftLifecycle(ctx context.Context) {
 		default:
 		}
 
-		state := app.node.GetState()
+		role := app.node.Role()
 
-		switch state.Role {
+		switch role {
 		case raft.Follower:
 			app.runFollower(ctx)
 
@@ -206,20 +212,22 @@ func (app *Application) runRaftLifecycle(ctx context.Context) {
 }
 
 func (app *Application) runFollower(ctx context.Context) {
-	timeout := raft.RandomElectionTimeout()
+	for {
+		timeout := raft.RandomElectionTimeout()
+		timer := time.NewTimer(timeout)
 
-	select {
-	case <-ctx.Done():
-		return
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return
 
-	case <-time.After(timeout):
-		term := app.node.BecomeCandidate()
-
-		app.logger.Info(
-			"Becoming candidate",
-			"term", term,
-		)
-		return
+		case <-app.heartbeat:
+			timer.Stop()
+			continue // reset election timer on heartbeat
+		case <-timer.C:
+			app.node.BecomeCandidate()
+			return
+		}
 	}
 }
 
@@ -235,6 +243,8 @@ func (app *Application) runCandidate(ctx context.Context) {
 			"term", term,
 			"votes", votes,
 		)
+
+		return
 	}
 
 	timeout := raft.RandomElectionTimeout()
@@ -251,18 +261,25 @@ func (app *Application) runCandidate(ctx context.Context) {
 }
 
 func (app *Application) runLeader(ctx context.Context) {
+	ticker := time.NewTicker(50 * time.Millisecond)
+	defer ticker.Stop()
+
 	select {
 	case <-ctx.Done():
 		return
 
-	case <-time.After(1 * time.Second):
-		return
+	case <-ticker.C:
+		req := app.node.AppendEntriesRequest()
+		app.sendHeartBeats(ctx, req)
 	}
 }
 
 /*
+===================================================================================================
 ========================================== Request Votes ==========================================
+===================================================================================================
 */
+
 func (app *Application) requestVotes(ctx context.Context, req raft.RequestVoteRequest) int {
 	votes := 1
 
@@ -300,9 +317,45 @@ func (app *Application) requestVotes(ctx context.Context, req raft.RequestVoteRe
 	return votes
 }
 
+func (app *Application) sendHeartBeats(ctx context.Context, req raft.AppendEntriesRequest) {
+	state := app.node.GetState()
+
+	for i := range app.config.Peers {
+		p := &app.config.Peers[i]
+
+		callContext, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
+
+		resp, err := p.Client.AppendEntries(callContext, req.ToProto())
+
+		cancel()
+
+		if err != nil {
+			app.logger.Error(
+				"Error sending heartbeat to peer",
+				"peer_id", p.ID,
+				"peer_addr", p.Addr,
+				"error", err.Error(),
+			)
+			continue
+		}
+
+		if !resp.Success {
+			if resp.Term > state.CurrentTerm {
+				app.node.BecomeFollower(resp.Term)
+				return
+			}
+
+			continue
+		}
+	}
+}
+
 /*
+=============================================================================================
 ========================================== Helpers ==========================================
+=============================================================================================
 */
+
 func NewApplication(config Config, logger *slog.Logger) (*Application, error) {
 	listener, err := net.Listen("tcp", config.Addr)
 	if err != nil {
@@ -320,11 +373,21 @@ func NewApplication(config Config, logger *slog.Logger) (*Application, error) {
 			ID:           config.ID,
 			StateMachine: storage,
 		}),
+
+		heartbeat: make(chan struct{}, 1),
 	}
 
 	proto.RegisterNodeServer(
 		app.server,
-		service.NewNodeService(app.node, logger),
+		service.NewNodeService(
+			app.node,
+			logger,
+			func() {
+				select {
+				case app.heartbeat <- struct{}{}:
+				default:
+				}
+			}),
 	)
 
 	return &app, nil
