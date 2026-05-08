@@ -21,6 +21,10 @@ type Config struct {
 	Peers []peer.Peer
 }
 
+func (c *Config) majority() int {
+	return (len(c.Peers)+1)/2 + 1
+}
+
 type Application struct {
 	config   Config
 	logger   *slog.Logger
@@ -51,32 +55,12 @@ func (app *Application) Run(ctx context.Context) error {
 		return err
 	}
 
-	// SweatSpot
-	if app.config.ID == 0 {
-		app.RequestVotes(ctx)
-	}
+	go app.runRaftLifecycle(ctx)
 
 	select {
 	case <-ctx.Done():
-		app.logger.Debug("shutting down gRPC server")
-
-		stopped := make(chan struct{})
-
-		go func() {
-			app.server.GracefulStop()
-			close(stopped)
-		}()
-
-		select {
-		case <-stopped:
-			app.logger.Info("node stopped gracefully")
-			return nil
-
-		case <-time.After(5 * time.Second):
-			app.logger.Warn("forcing gRPC server shutdown")
-			app.server.Stop()
-			return nil
-		}
+		app.shutdown()
+		return nil
 
 	case err := <-errChannel:
 		return fmt.Errorf("gRPC server error: %w", err)
@@ -174,19 +158,120 @@ func (app *Application) waitForPeers(ctx context.Context) error {
 	}
 }
 
+func (app *Application) shutdown() {
+	app.logger.Debug("shutting down gRPC server")
+
+	stopped := make(chan struct{})
+
+	go func() {
+		app.server.GracefulStop()
+		close(stopped)
+	}()
+
+	select {
+	case <-stopped:
+		app.logger.Info("node stopped gracefully")
+
+	case <-time.After(5 * time.Second):
+		app.logger.Warn("forcing gRPC server shutdown")
+		app.server.Stop()
+	}
+}
+
+/*
+========================================== Lifecycle ==========================================
+*/
+
+func (app *Application) runRaftLifecycle(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
+		state := app.node.GetState()
+
+		switch state.Role {
+		case raft.Follower:
+			app.runFollower(ctx)
+
+		case raft.Candidate:
+			app.runCandidate(ctx)
+
+		case raft.Leader:
+			app.runLeader(ctx)
+		}
+	}
+}
+
+func (app *Application) runFollower(ctx context.Context) {
+	timeout := raft.RandomElectionTimeout()
+
+	select {
+	case <-ctx.Done():
+		return
+
+	case <-time.After(timeout):
+		term := app.node.BecomeCandidate()
+
+		app.logger.Info(
+			"Becoming candidate",
+			"term", term,
+		)
+		return
+	}
+}
+
+func (app *Application) runCandidate(ctx context.Context) {
+	req := app.node.CandidateRequest()
+	votes := app.requestVotes(ctx, req)
+
+	if votes >= app.config.majority() {
+		term := app.node.BecomeLeader()
+
+		app.logger.Info(
+			"Becoming leader",
+			"term", term,
+			"votes", votes,
+		)
+	}
+
+	timeout := raft.RandomElectionTimeout()
+
+	select {
+	case <-ctx.Done():
+		return
+
+	case <-time.After(timeout):
+		app.node.BecomeCandidate()
+
+		return
+	}
+}
+
+func (app *Application) runLeader(ctx context.Context) {
+	select {
+	case <-ctx.Done():
+		return
+
+	case <-time.After(1 * time.Second):
+		return
+	}
+}
+
 /*
 ========================================== Request Votes ==========================================
 */
-func (app *Application) RequestVotes(ctx context.Context) {
+func (app *Application) requestVotes(ctx context.Context, req raft.RequestVoteRequest) int {
+	votes := 1
+
 	for i := range app.config.Peers {
 		p := &app.config.Peers[i]
 
 		callContext, cancel := context.WithTimeout(ctx, 1*time.Millisecond)
 
-		resp, err := p.Client.RequestVote(callContext, &proto.RequestVoteRequest{
-			Term:        1,
-			CandidateId: app.config.ID,
-		})
+		resp, err := p.Client.RequestVote(callContext, req.ToProto())
 
 		cancel()
 
@@ -207,7 +292,12 @@ func (app *Application) RequestVotes(ctx context.Context) {
 			"term", resp.Term,
 			"vote_granted", resp.VoteGranted,
 		)
+		if resp.VoteGranted {
+			votes++
+		}
 	}
+
+	return votes
 }
 
 /*

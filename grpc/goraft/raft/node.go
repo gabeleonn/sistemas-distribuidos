@@ -21,6 +21,14 @@ const (
 	Leader    Role = "Leader"
 )
 
+type State struct {
+	ID          int64
+	Role        Role
+	CurrentTerm int64
+	VotedFor    *int64
+	Log         []LogEntry
+}
+
 // Node represents a Raft node in the cluster, containing its ID, role, term, and other relevant information.
 type Node struct {
 	mu sync.RWMutex
@@ -41,29 +49,28 @@ type Node struct {
 	stateMachine StateMachine
 }
 
-// ID returns the ID of the node.
+/*
+========================================== Getters ==========================================
+*/
+
 func (n *Node) ID() int64 {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
 	return n.id
 }
 
-// Role returns the current role of the node (Follower, Candidate, or Leader).
 func (n *Node) Role() Role {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
 	return n.role
 }
 
-// CurrentTerm returns the current term of the node.
 func (n *Node) CurrentTerm() int64 {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
 	return n.currentTerm
 }
 
-// VotedFor returns the ID of the candidate that received the node's vote in the current term,
-// or nil if the node has not voted for any candidate.
 func (n *Node) VotedFor() (int64, bool) {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
@@ -73,7 +80,6 @@ func (n *Node) VotedFor() (int64, bool) {
 	return *n.votedFor, true
 }
 
-// Log returns the log entries of the node.
 func (n *Node) Log() []LogEntry {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
@@ -83,38 +89,83 @@ func (n *Node) Log() []LogEntry {
 	return logCopy
 }
 
-// CommitIndex returns the index of the highest log entry known to be committed.
 func (n *Node) CommitIndex() int64 {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
 	return n.commitIndex
 }
 
-// LastApplied returns the index of the highest log entry applied to the state machine.
 func (n *Node) LastApplied() int64 {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
 	return n.lastApplied
 }
 
-// NextIndex returns the index of the next log entry to send to a given peer.
 func (n *Node) NextIndex(peerID int64) int64 {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
 	return n.nextIndex[peerID]
 }
 
-// MatchIndex returns the index of the highest log entry known to be replicated on a given peer.
 func (n *Node) MatchIndex(peerID int64) int64 {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
 	return n.matchIndex[peerID]
 }
 
-// RequestVote handles incoming RequestVote RPCs from other nodes in the cluster, allowing the node
-// to participate in leader elections by granting or denying votes based on its current state and the
-// information provided in the request.
-func (n *Node) RequestVote(req RequestVoteRequest) RequestVoteResponse {
+/*
+========================================== Snapshot ==========================================
+*/
+func (n *Node) GetState() State {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+
+	logCopy := make([]LogEntry, len(n.log))
+	copy(logCopy, n.log)
+
+	var votedFor *int64
+	if n.votedFor != nil {
+		value := *n.votedFor
+		votedFor = &value
+	}
+
+	return State{
+		ID:          n.id,
+		Role:        n.role,
+		CurrentTerm: n.currentTerm,
+		VotedFor:    votedFor,
+		Log:         logCopy,
+	}
+}
+
+/*
+========================================== Lifecycle ==========================================
+*/
+func (n *Node) BecomeCandidate() int64 {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+
+	n.role = Candidate
+	n.currentTerm++
+
+	candidateID := n.id
+	n.votedFor = &candidateID
+
+	return n.currentTerm
+}
+
+func (n *Node) BecomeLeader() int64 {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+
+	n.role = Leader
+	return n.currentTerm
+}
+
+/*
+========================================== gRPC Handlers ==========================================
+*/
+func (n *Node) CandidateResponse(req RequestVoteRequest) RequestVoteResponse {
 	n.mu.Lock()
 	defer n.mu.Unlock()
 
@@ -146,8 +197,19 @@ func (n *Node) RequestVote(req RequestVoteRequest) RequestVoteResponse {
 	}
 }
 
-// NewNode creates a new Node instance with the given ID and initializing it as a Follower with default
-// values for other fields.
+func (n *Node) CandidateRequest() RequestVoteRequest {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+
+	return RequestVoteRequest{
+		Term:        n.currentTerm,
+		CandidateID: n.id,
+	}
+}
+
+/*
+========================================== Helpers ==========================================
+*/
 func NewNode(config Config) *Node {
 	return &Node{
 		id:           config.ID,

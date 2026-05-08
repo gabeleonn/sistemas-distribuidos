@@ -42,7 +42,7 @@ func (s *NodeService) RequestVote(
 	req *proto.RequestVoteRequest,
 ) (*proto.RequestVoteResponse, error) {
 	request := raft.RequestVoteRequestFromProto(req)
-	vote := s.node.RequestVote(*request)
+	vote := s.node.CandidateResponse(*request)
 
 	return vote.ToProto(), nil
 }
