@@ -29,7 +29,6 @@ var serverCommand = &cobra.Command{
 
 		nodeAddr, err := cmd.Flags().GetString("addr")
 		if err != nil {
-			fmt.Println("Error getting node address:", err)
 			return err
 		}
 

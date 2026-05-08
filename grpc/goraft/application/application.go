@@ -42,19 +42,16 @@ func (app *Application) Run(ctx context.Context) error {
 	errChannel := make(chan error, 1)
 
 	go func() {
-		app.logger.Info(
-			"Starting gRPC server",
-			"addr", app.config.Addr,
-			"id", app.config.ID,
-		)
-
 		if err := app.server.Serve(app.listener); err != nil {
 			errChannel <- err
 		}
 	}()
 
-	// SafeZone
-	go app.pingPeers(ctx)
+	if err := app.waitForPeers(ctx); err != nil {
+		return err
+	}
+
+	// SweatSpot
 
 	select {
 	case <-ctx.Done():
@@ -69,7 +66,7 @@ func (app *Application) Run(ctx context.Context) error {
 
 		select {
 		case <-stopped:
-			app.logger.Debug("gRPC server stopped gracefully")
+			app.logger.Info("node stopped gracefully")
 			return nil
 
 		case <-time.After(5 * time.Second):
@@ -113,45 +110,64 @@ func (app *Application) closePeerConnections() {
 	}
 }
 
-func (app *Application) pingPeers(ctx context.Context) {
-	for i := range app.config.Peers {
-		p := &app.config.Peers[i]
+func (app *Application) waitForPeers(ctx context.Context) error {
+	deadline := time.After(10 * time.Second)
+	ticker := time.NewTicker(200 * time.Millisecond)
+	defer ticker.Stop()
 
-		if p.Client == nil {
-			app.logger.Warn(
-				"Skipping ping to peer with no client",
-				"peer_id", p.ID,
-				"peer_addr", p.Addr,
-			)
-			continue
+	ready := make(map[int64]bool)
+
+	for {
+		if len(ready) == len(app.config.Peers) {
+			app.logger.Info(fmt.Sprintf("Server ready at %s", app.config.Addr))
+			return nil
 		}
 
-		callCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
 
-		resp, err := p.Client.Ping(callCtx, &proto.PingRequest{
-			Message: "ping",
-			FromId:  app.config.ID,
-		})
+		case <-deadline:
+			return fmt.Errorf("timeout waiting for peers")
 
-		cancel()
+		case <-ticker.C:
+			for i := range app.config.Peers {
+				p := &app.config.Peers[i]
 
-		if err != nil {
-			app.logger.Error(
-				"Error pinging peer",
-				"peer_id", p.ID,
-				"peer_addr", p.Addr,
-				"error", err,
-			)
-			continue
+				if ready[p.ID] {
+					continue
+				}
+
+				callCtx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
+
+				resp, err := p.Client.Ping(callCtx, &proto.PingRequest{
+					Message: "ping",
+					FromId:  app.config.ID,
+				})
+
+				cancel()
+
+				if err != nil {
+					app.logger.Debug(
+						"peer not ready yet",
+						"peer_id", p.ID,
+						"peer_addr", p.Addr,
+						"error", err.Error(),
+					)
+					continue
+				}
+
+				app.logger.Debug(
+					"peer is ready",
+					"peer_id", p.ID,
+					"peer_addr", p.Addr,
+					"message", resp.Message,
+					"from_id", resp.FromId,
+				)
+
+				ready[p.ID] = true
+			}
 		}
-
-		app.logger.Info(
-			"Received ping response",
-			"peer_id", p.ID,
-			"peer_addr", p.Addr,
-			"message", resp.Message,
-			"from_id", resp.FromId,
-		)
 	}
 }
 
