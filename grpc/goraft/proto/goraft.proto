@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package proto;
+option go_package = "giraft/proto;proto";
+
+
+
+message PingRequest {
+  int64 from_id = 1;
+  string message = 2;
+}
+
+message PingResponse {
+  int64 from_id = 1;
+  string message = 2;
+}
+
+service Node {
+  rpc Ping(PingRequest) returns (PingResponse);
+}
