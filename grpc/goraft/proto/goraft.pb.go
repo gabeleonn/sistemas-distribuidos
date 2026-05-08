@@ -21,6 +21,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// ###################### PING ######################
 type PingRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	FromId        int64                  `protobuf:"varint,1,opt,name=from_id,json=fromId,proto3" json:"from_id,omitempty"`
@@ -125,6 +126,127 @@ func (x *PingResponse) GetMessage() string {
 	return ""
 }
 
+// ###################### RequestVote ######################
+type RequestVoteRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Term          int64                  `protobuf:"varint,1,opt,name=term,proto3" json:"term,omitempty"`
+	CandidateId   int64                  `protobuf:"varint,2,opt,name=candidate_id,json=candidateId,proto3" json:"candidate_id,omitempty"`
+	LastLogIndex  int64                  `protobuf:"varint,3,opt,name=last_log_index,json=lastLogIndex,proto3" json:"last_log_index,omitempty"`
+	LastLogTerm   int64                  `protobuf:"varint,4,opt,name=last_log_term,json=lastLogTerm,proto3" json:"last_log_term,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RequestVoteRequest) Reset() {
+	*x = RequestVoteRequest{}
+	mi := &file_proto_goraft_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RequestVoteRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RequestVoteRequest) ProtoMessage() {}
+
+func (x *RequestVoteRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_goraft_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RequestVoteRequest.ProtoReflect.Descriptor instead.
+func (*RequestVoteRequest) Descriptor() ([]byte, []int) {
+	return file_proto_goraft_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *RequestVoteRequest) GetTerm() int64 {
+	if x != nil {
+		return x.Term
+	}
+	return 0
+}
+
+func (x *RequestVoteRequest) GetCandidateId() int64 {
+	if x != nil {
+		return x.CandidateId
+	}
+	return 0
+}
+
+func (x *RequestVoteRequest) GetLastLogIndex() int64 {
+	if x != nil {
+		return x.LastLogIndex
+	}
+	return 0
+}
+
+func (x *RequestVoteRequest) GetLastLogTerm() int64 {
+	if x != nil {
+		return x.LastLogTerm
+	}
+	return 0
+}
+
+type RequestVoteResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Term          int64                  `protobuf:"varint,1,opt,name=term,proto3" json:"term,omitempty"`
+	VoteGranted   bool                   `protobuf:"varint,2,opt,name=vote_granted,json=voteGranted,proto3" json:"vote_granted,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RequestVoteResponse) Reset() {
+	*x = RequestVoteResponse{}
+	mi := &file_proto_goraft_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RequestVoteResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RequestVoteResponse) ProtoMessage() {}
+
+func (x *RequestVoteResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_goraft_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RequestVoteResponse.ProtoReflect.Descriptor instead.
+func (*RequestVoteResponse) Descriptor() ([]byte, []int) {
+	return file_proto_goraft_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *RequestVoteResponse) GetTerm() int64 {
+	if x != nil {
+		return x.Term
+	}
+	return 0
+}
+
+func (x *RequestVoteResponse) GetVoteGranted() bool {
+	if x != nil {
+		return x.VoteGranted
+	}
+	return false
+}
+
 var File_proto_goraft_proto protoreflect.FileDescriptor
 
 const file_proto_goraft_proto_rawDesc = "" +
@@ -135,9 +257,18 @@ const file_proto_goraft_proto_rawDesc = "" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"A\n" +
 	"\fPingResponse\x12\x17\n" +
 	"\afrom_id\x18\x01 \x01(\x03R\x06fromId\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage27\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"\x95\x01\n" +
+	"\x12RequestVoteRequest\x12\x12\n" +
+	"\x04term\x18\x01 \x01(\x03R\x04term\x12!\n" +
+	"\fcandidate_id\x18\x02 \x01(\x03R\vcandidateId\x12$\n" +
+	"\x0elast_log_index\x18\x03 \x01(\x03R\flastLogIndex\x12\"\n" +
+	"\rlast_log_term\x18\x04 \x01(\x03R\vlastLogTerm\"L\n" +
+	"\x13RequestVoteResponse\x12\x12\n" +
+	"\x04term\x18\x01 \x01(\x03R\x04term\x12!\n" +
+	"\fvote_granted\x18\x02 \x01(\bR\vvoteGranted2}\n" +
 	"\x04Node\x12/\n" +
-	"\x04Ping\x12\x12.proto.PingRequest\x1a\x13.proto.PingResponseB\x14Z\x12giraft/proto;protob\x06proto3"
+	"\x04Ping\x12\x12.proto.PingRequest\x1a\x13.proto.PingResponse\x12D\n" +
+	"\vRequestVote\x12\x19.proto.RequestVoteRequest\x1a\x1a.proto.RequestVoteResponseB\x14Z\x12giraft/proto;protob\x06proto3"
 
 var (
 	file_proto_goraft_proto_rawDescOnce sync.Once
@@ -151,16 +282,20 @@ func file_proto_goraft_proto_rawDescGZIP() []byte {
 	return file_proto_goraft_proto_rawDescData
 }
 
-var file_proto_goraft_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_proto_goraft_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_proto_goraft_proto_goTypes = []any{
-	(*PingRequest)(nil),  // 0: proto.PingRequest
-	(*PingResponse)(nil), // 1: proto.PingResponse
+	(*PingRequest)(nil),         // 0: proto.PingRequest
+	(*PingResponse)(nil),        // 1: proto.PingResponse
+	(*RequestVoteRequest)(nil),  // 2: proto.RequestVoteRequest
+	(*RequestVoteResponse)(nil), // 3: proto.RequestVoteResponse
 }
 var file_proto_goraft_proto_depIdxs = []int32{
 	0, // 0: proto.Node.Ping:input_type -> proto.PingRequest
-	1, // 1: proto.Node.Ping:output_type -> proto.PingResponse
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
+	2, // 1: proto.Node.RequestVote:input_type -> proto.RequestVoteRequest
+	1, // 2: proto.Node.Ping:output_type -> proto.PingResponse
+	3, // 3: proto.Node.RequestVote:output_type -> proto.RequestVoteResponse
+	2, // [2:4] is the sub-list for method output_type
+	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -177,7 +312,7 @@ func file_proto_goraft_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_goraft_proto_rawDesc), len(file_proto_goraft_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

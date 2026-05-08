@@ -3,7 +3,6 @@ package messages
 import (
 	"raft/models/log"
 	"raft/models/utils"
-
 	"testing"
 )
 

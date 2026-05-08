@@ -2,10 +2,10 @@ package interfaces
 
 import (
 	"context"
-
-	pb "raft/autogen"
 	"raft/models/cluster"
 	"raft/models/node"
+
+	pb "raft/autogen"
 
 	"google.golang.org/protobuf/types/known/emptypb"
 )

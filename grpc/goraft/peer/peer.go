@@ -25,7 +25,6 @@ func (p *Peer) Open() error {
 		p.Addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
-
 	if err != nil {
 		return err
 	}

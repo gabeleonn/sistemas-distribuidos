@@ -58,7 +58,6 @@ var serverCommand = &cobra.Command{
 			Addr:  nodeAddr,
 			Peers: peers,
 		}, logger)
-
 		if err != nil {
 			return err
 		}

@@ -1,8 +1,11 @@
 package raft
 
-import "sync"
+import (
+	"sync"
+)
 
-// Config holds the configuration for a Raft node, including its ID and the state machine it will use to apply commands from the log.
+// Config holds the configuration for a Raft node, including its ID and the state machine it will use to
+// apply commands from the log.
 type Config struct {
 	ID           int64
 	StateMachine StateMachine
@@ -59,7 +62,8 @@ func (n *Node) CurrentTerm() int64 {
 	return n.currentTerm
 }
 
-// VotedFor returns the ID of the candidate that received the node's vote in the current term, or nil if the node has not voted for any candidate.
+// VotedFor returns the ID of the candidate that received the node's vote in the current term,
+// or nil if the node has not voted for any candidate.
 func (n *Node) VotedFor() (int64, bool) {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
@@ -107,7 +111,43 @@ func (n *Node) MatchIndex(peerID int64) int64 {
 	return n.matchIndex[peerID]
 }
 
-// NewNode creates a new Node instance with the given ID and initializing it as a Follower with default values for other fields.
+// RequestVote handles incoming RequestVote RPCs from other nodes in the cluster, allowing the node
+// to participate in leader elections by granting or denying votes based on its current state and the
+// information provided in the request.
+func (n *Node) RequestVote(req RequestVoteRequest) RequestVoteResponse {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+
+	if req.Term < n.currentTerm {
+		return RequestVoteResponse{
+			Term:        n.currentTerm,
+			VoteGranted: false,
+		}
+	}
+
+	if req.Term > n.currentTerm {
+		n.currentTerm = req.Term
+		n.role = Follower
+		n.votedFor = nil
+	}
+
+	if n.votedFor == nil || *n.votedFor == req.CandidateID {
+		n.votedFor = &req.CandidateID
+
+		return RequestVoteResponse{
+			Term:        n.currentTerm,
+			VoteGranted: true,
+		}
+	}
+
+	return RequestVoteResponse{
+		Term:        n.currentTerm,
+		VoteGranted: false,
+	}
+}
+
+// NewNode creates a new Node instance with the given ID and initializing it as a Follower with default
+// values for other fields.
 func NewNode(config Config) *Node {
 	return &Node{
 		id:           config.ID,

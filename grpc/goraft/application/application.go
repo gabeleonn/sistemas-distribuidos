@@ -15,14 +15,12 @@ import (
 	"google.golang.org/grpc"
 )
 
-// Config holds the configuration for the Application, including the node's ID, address, and a list of peers in the cluster.
 type Config struct {
 	ID    int64
 	Addr  string
 	Peers []peer.Peer
 }
 
-// Application represents the main application that manages the gRPC server, peer connections, and logging for a Raft node.
 type Application struct {
 	config   Config
 	logger   *slog.Logger
@@ -31,7 +29,9 @@ type Application struct {
 	node     *raft.Node
 }
 
-// Run starts the application by opening connections to peers, starting the gRPC server, and handling shutdown gracefully when the context is canceled or an error occurs.
+/*
+========================================== Core Functionalities ==========================================
+*/
 func (app *Application) Run(ctx context.Context) error {
 	if err := app.openPeerConnections(); err != nil {
 		return err
@@ -52,6 +52,9 @@ func (app *Application) Run(ctx context.Context) error {
 	}
 
 	// SweatSpot
+	if app.config.ID == 0 {
+		app.RequestVotes(ctx)
+	}
 
 	select {
 	case <-ctx.Done():
@@ -171,7 +174,45 @@ func (app *Application) waitForPeers(ctx context.Context) error {
 	}
 }
 
-// NewApplication creates a new Application instance with the given configuration and logger, sets up the gRPC server, and returns the application ready to run.
+/*
+========================================== Request Votes ==========================================
+*/
+func (app *Application) RequestVotes(ctx context.Context) {
+	for i := range app.config.Peers {
+		p := &app.config.Peers[i]
+
+		callContext, cancel := context.WithTimeout(ctx, 1*time.Millisecond)
+
+		resp, err := p.Client.RequestVote(callContext, &proto.RequestVoteRequest{
+			Term:        1,
+			CandidateId: app.config.ID,
+		})
+
+		cancel()
+
+		if err != nil {
+			app.logger.Error(
+				"Error requesting vote from peer",
+				"peer_id", p.ID,
+				"peer_addr", p.Addr,
+				"error", err.Error(),
+			)
+			continue
+		}
+
+		app.logger.Info(
+			"Received vote response from peer",
+			"peer_id", p.ID,
+			"peer_addr", p.Addr,
+			"term", resp.Term,
+			"vote_granted", resp.VoteGranted,
+		)
+	}
+}
+
+/*
+========================================== Helpers ==========================================
+*/
 func NewApplication(config Config, logger *slog.Logger) (*Application, error) {
 	listener, err := net.Listen("tcp", config.Addr)
 	if err != nil {
@@ -193,7 +234,7 @@ func NewApplication(config Config, logger *slog.Logger) (*Application, error) {
 
 	proto.RegisterNodeServer(
 		app.server,
-		service.NewPingService(app.node, logger),
+		service.NewNodeService(app.node, logger),
 	)
 
 	return &app, nil
