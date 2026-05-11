@@ -1,49 +1,147 @@
 # Algoritmo de Consenso Raft
+
 Projeto criado para a disciplina de Sistemas Distribuídos do Programa de Pós-Graduação em Computação Aplicada da UTFPR.
 
-## Estrutura
-O projeto é dividido em três partes principais: `proto`, `raft-node` e `raft-client`.
+O objetivo do projeto é implementar uma versão didática do algoritmo de consenso **Raft**, usando **Go** para os nós do cluster e **gRPC** para a comunicação entre processos. O sistema também possui um cliente em **Python**, responsável por enviar comandos para uma key-value store replicada.
 
-### Proto
-Arquivo que define a IDL do projeto, consumida tanto pelo `raft-node` quanto pelo `raft-client`.
+## Visão geral
 
-### Raft Node
-Implementação do algoritmo Raft.
-Responsável por executar as diretrizes e regras descritas no paper de 2014 de Ongaro e Ousterhout.
+O projeto é dividido em três partes principais:
 
-Implementado em Go.
+- **Raft Node**: implementação de um nó Raft.
+- **Raft Cluster**: inicialização e gerenciamento local de múltiplos nós.
+- **Raft Client**: cliente Python usado para enviar comandos aos nós.
 
-### Raft Cluster
-Responsável pelo bootstrap do cluster: criação, inicialização e finalização dos nós.
-Também mantém informações globais, como quantidade de nós, atribuição de IDs, portas e operações de reset.
-Além disso, atua como camada de observabilidade, consumindo o estado dos nós (via streaming) para fins de debug e inspeção do sistema.
+A comunicação entre os nós acontece via gRPC. Cada nó executa de forma independente, participa da eleição de líder e, após a eleição, pode receber ou replicar comandos conforme as regras do algoritmo Raft.
 
-Implementado em Go.
+## Estrutura do projeto
 
-### Raft Client
-Cliente responsável por interagir com os nós, enviando comandos para a key-value store e lidando com redirecionamentos para o líder.
-
-Implementado em Python.
-
-## Pastas
-```
+```text
 .
-├── grpc/                          # Comunicação via gRPC
-│   ├── client/                    # Cliente gRPC (interação com os nós)
-│   └── raft/                      # Implementação do Raft
-│       ├── autogen/               # Código gerado pelo protoc (stubs)
-│       ├── interfaces/            # Camada de interface (RPC ↔ domínio)
-│       ├── models/                # Modelos de dados (Node, LogEntry, etc.)
-│       ├── proto/                 # Definições Protocol Buffers
-│       └── readme.md              # Documentação do módulo Raft
-└── readme.md                      # Documentação geral
+├── grpc/
+│   ├── application/      # Runtime e process control
+│   ├── client/           # Cliente Python gRPC
+│   ├── cmd/              # Comandos CLI da aplicação
+│   ├── peer/             # Comunicação com outros nós do cluster
+│   ├── proto/            # Definições Protocol Buffers
+│   ├── raft/             # Implementação do algoritmo Raft
+│   ├── service/          # Serviços gRPC expostos pelos nós
+│   ├── store/            # Key-value store aplicada sobre o log
+│   ├── go.mod
+│   ├── go.sum
+│   └── main.go
+└── readme.md
 ```
 
-## Instalação das Dependências
-WIP
+## Requisitos
 
-## Como operar?
-WIP
+Para executar o projeto, é necessário ter instalado:
+
+- Go `1.26+`
+- Python `3.14+`
+- `pip`
+- `venv`
+
+## Instalação
+
+### 1. Instalar dependências do Go
+
+A partir da pasta `grpc`:
+
+```bash
+go mod tidy
+```
+
+### 2. Criar ambiente virtual do cliente Python
+
+A partir da pasta `grpc/client`:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+### 3. Instalar dependências do cliente
+
+Ainda dentro de `grpc/client`:
+
+```bash
+python3 -m pip install -r requirements.txt
+```
+
+O arquivo `requirements.txt` deve conter:
+
+```text
+grpcio
+grpcio-tools
+```
+
+## Comandos disponíveis
+
+### Cluster
+
+```bash
+go run main.go cluster
+```
+
+Flags:
+
+```text
+-n, --nodes int   Número de nós no cluster Raft
+```
+
+Exemplo:
+
+```bash
+go run main.go cluster --nodes 4
+```
+
+### Node
+
+```bash
+go run main.go node
+```
+
+Flags:
+
+```text
+-i, --id int          ID do nó Raft
+-a, --addr string     Endereço do nó Raft
+-r, --peers strings   Peers do nó Raft no formato id=addr
+```
+
+Exemplo:
+
+```bash
+go run main.go node \
+  --id 0 \
+  --addr localhost:50050 \
+  --peers 1=localhost:50051,2=localhost:50052
+```
+
+### Client
+
+```bash
+python3 client/client.py <host:port> <command>
+```
+
+Comandos suportados:
+
+```text
+SET:key:value
+GET:key
+DEL:key
+```
+
+Exemplos:
+
+```bash
+python3 client/client.py localhost:50052 SET:x:10
+python3 client/client.py localhost:50052 GET:x
+python3 client/client.py localhost:50052 DEL:x
+```
 
 ## Referências
-[https://raft.github.io/raft.pdf](In Search of an Understandable Consensus Algorithm, Ongaro and Ousterhout, 2014)
+
+- Ongaro, D.; Ousterhout, J. **In Search of an Understandable Consensus Algorithm**. 2014.  
+  Disponível em: https://raft.github.io/raft.pdf

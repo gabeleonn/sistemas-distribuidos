@@ -340,6 +340,111 @@ func (x *AppendEntriesResponse) GetSuccess() bool {
 	return false
 }
 
+// ###################### Commands ######################
+type CommandRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Command       string                 `protobuf:"bytes,1,opt,name=command,proto3" json:"command,omitempty"` // command = SET:key:value or DEL:key  or GET:key
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CommandRequest) Reset() {
+	*x = CommandRequest{}
+	mi := &file_proto_goraft_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CommandRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CommandRequest) ProtoMessage() {}
+
+func (x *CommandRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_goraft_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CommandRequest.ProtoReflect.Descriptor instead.
+func (*CommandRequest) Descriptor() ([]byte, []int) {
+	return file_proto_goraft_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *CommandRequest) GetCommand() string {
+	if x != nil {
+		return x.Command
+	}
+	return ""
+}
+
+type CommandResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	LeaderAddress string                 `protobuf:"bytes,3,opt,name=leader_address,json=leaderAddress,proto3" json:"leader_address,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CommandResponse) Reset() {
+	*x = CommandResponse{}
+	mi := &file_proto_goraft_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CommandResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CommandResponse) ProtoMessage() {}
+
+func (x *CommandResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_goraft_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CommandResponse.ProtoReflect.Descriptor instead.
+func (*CommandResponse) Descriptor() ([]byte, []int) {
+	return file_proto_goraft_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *CommandResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *CommandResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *CommandResponse) GetLeaderAddress() string {
+	if x != nil {
+		return x.LeaderAddress
+	}
+	return ""
+}
+
 var File_proto_goraft_proto protoreflect.FileDescriptor
 
 const file_proto_goraft_proto_rawDesc = "" +
@@ -366,10 +471,17 @@ const file_proto_goraft_proto_rawDesc = "" +
 	"\rleader_commit\x18\x06 \x01(\x03R\fleaderCommit\"E\n" +
 	"\x15AppendEntriesResponse\x12\x12\n" +
 	"\x04term\x18\x01 \x01(\x03R\x04term\x12\x18\n" +
-	"\asuccess\x18\x02 \x01(\bR\asuccess2\x98\x01\n" +
+	"\asuccess\x18\x02 \x01(\bR\asuccess\"*\n" +
+	"\x0eCommandRequest\x12\x18\n" +
+	"\acommand\x18\x01 \x01(\tR\acommand\"l\n" +
+	"\x0fCommandResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12%\n" +
+	"\x0eleader_address\x18\x03 \x01(\tR\rleaderAddress2\xd9\x01\n" +
 	"\x04Node\x12D\n" +
 	"\vRequestVote\x12\x19.proto.RequestVoteRequest\x1a\x1a.proto.RequestVoteResponse\x12J\n" +
-	"\rAppendEntries\x12\x1b.proto.AppendEntriesRequest\x1a\x1c.proto.AppendEntriesResponseB\x14Z\x12giraft/proto;protob\x06proto3"
+	"\rAppendEntries\x12\x1b.proto.AppendEntriesRequest\x1a\x1c.proto.AppendEntriesResponse\x12?\n" +
+	"\x0eExecuteCommand\x12\x15.proto.CommandRequest\x1a\x16.proto.CommandResponseB\x14Z\x12giraft/proto;protob\x06proto3"
 
 var (
 	file_proto_goraft_proto_rawDescOnce sync.Once
@@ -383,22 +495,26 @@ func file_proto_goraft_proto_rawDescGZIP() []byte {
 	return file_proto_goraft_proto_rawDescData
 }
 
-var file_proto_goraft_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_proto_goraft_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_proto_goraft_proto_goTypes = []any{
 	(*RequestVoteRequest)(nil),    // 0: proto.RequestVoteRequest
 	(*RequestVoteResponse)(nil),   // 1: proto.RequestVoteResponse
 	(*LogEntry)(nil),              // 2: proto.LogEntry
 	(*AppendEntriesRequest)(nil),  // 3: proto.AppendEntriesRequest
 	(*AppendEntriesResponse)(nil), // 4: proto.AppendEntriesResponse
+	(*CommandRequest)(nil),        // 5: proto.CommandRequest
+	(*CommandResponse)(nil),       // 6: proto.CommandResponse
 }
 var file_proto_goraft_proto_depIdxs = []int32{
 	2, // 0: proto.AppendEntriesRequest.entries:type_name -> proto.LogEntry
 	0, // 1: proto.Node.RequestVote:input_type -> proto.RequestVoteRequest
 	3, // 2: proto.Node.AppendEntries:input_type -> proto.AppendEntriesRequest
-	1, // 3: proto.Node.RequestVote:output_type -> proto.RequestVoteResponse
-	4, // 4: proto.Node.AppendEntries:output_type -> proto.AppendEntriesResponse
-	3, // [3:5] is the sub-list for method output_type
-	1, // [1:3] is the sub-list for method input_type
+	5, // 3: proto.Node.ExecuteCommand:input_type -> proto.CommandRequest
+	1, // 4: proto.Node.RequestVote:output_type -> proto.RequestVoteResponse
+	4, // 5: proto.Node.AppendEntries:output_type -> proto.AppendEntriesResponse
+	6, // 6: proto.Node.ExecuteCommand:output_type -> proto.CommandResponse
+	4, // [4:7] is the sub-list for method output_type
+	1, // [1:4] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
 	1, // [1:1] is the sub-list for extension extendee
 	0, // [0:1] is the sub-list for field type_name
@@ -415,7 +531,7 @@ func file_proto_goraft_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_goraft_proto_rawDesc), len(file_proto_goraft_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

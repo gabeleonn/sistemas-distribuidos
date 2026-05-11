@@ -19,8 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Node_RequestVote_FullMethodName   = "/proto.Node/RequestVote"
-	Node_AppendEntries_FullMethodName = "/proto.Node/AppendEntries"
+	Node_RequestVote_FullMethodName    = "/proto.Node/RequestVote"
+	Node_AppendEntries_FullMethodName  = "/proto.Node/AppendEntries"
+	Node_ExecuteCommand_FullMethodName = "/proto.Node/ExecuteCommand"
 )
 
 // NodeClient is the client API for Node service.
@@ -29,6 +30,7 @@ const (
 type NodeClient interface {
 	RequestVote(ctx context.Context, in *RequestVoteRequest, opts ...grpc.CallOption) (*RequestVoteResponse, error)
 	AppendEntries(ctx context.Context, in *AppendEntriesRequest, opts ...grpc.CallOption) (*AppendEntriesResponse, error)
+	ExecuteCommand(ctx context.Context, in *CommandRequest, opts ...grpc.CallOption) (*CommandResponse, error)
 }
 
 type nodeClient struct {
@@ -59,12 +61,23 @@ func (c *nodeClient) AppendEntries(ctx context.Context, in *AppendEntriesRequest
 	return out, nil
 }
 
+func (c *nodeClient) ExecuteCommand(ctx context.Context, in *CommandRequest, opts ...grpc.CallOption) (*CommandResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CommandResponse)
+	err := c.cc.Invoke(ctx, Node_ExecuteCommand_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // NodeServer is the server API for Node service.
 // All implementations must embed UnimplementedNodeServer
 // for forward compatibility.
 type NodeServer interface {
 	RequestVote(context.Context, *RequestVoteRequest) (*RequestVoteResponse, error)
 	AppendEntries(context.Context, *AppendEntriesRequest) (*AppendEntriesResponse, error)
+	ExecuteCommand(context.Context, *CommandRequest) (*CommandResponse, error)
 	mustEmbedUnimplementedNodeServer()
 }
 
@@ -80,6 +93,9 @@ func (UnimplementedNodeServer) RequestVote(context.Context, *RequestVoteRequest)
 }
 func (UnimplementedNodeServer) AppendEntries(context.Context, *AppendEntriesRequest) (*AppendEntriesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method AppendEntries not implemented")
+}
+func (UnimplementedNodeServer) ExecuteCommand(context.Context, *CommandRequest) (*CommandResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ExecuteCommand not implemented")
 }
 func (UnimplementedNodeServer) mustEmbedUnimplementedNodeServer() {}
 func (UnimplementedNodeServer) testEmbeddedByValue()              {}
@@ -138,6 +154,24 @@ func _Node_AppendEntries_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Node_ExecuteCommand_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CommandRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NodeServer).ExecuteCommand(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Node_ExecuteCommand_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NodeServer).ExecuteCommand(ctx, req.(*CommandRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Node_ServiceDesc is the grpc.ServiceDesc for Node service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -152,6 +186,10 @@ var Node_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AppendEntries",
 			Handler:    _Node_AppendEntries_Handler,
+		},
+		{
+			MethodName: "ExecuteCommand",
+			Handler:    _Node_ExecuteCommand_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

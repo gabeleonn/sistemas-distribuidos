@@ -38,7 +38,19 @@ message AppendEntriesResponse {
   bool success = 2;
 }
 
+/* ###################### Commands ###################### */
+message CommandRequest {
+  string command = 1; // command = SET:key:value or DEL:key  or GET:key
+}
+
+message CommandResponse {
+  bool success = 1;
+  string message = 2;
+  string leader_address = 3;
+}
+
 service Node {
   rpc RequestVote(RequestVoteRequest) returns (RequestVoteResponse);
   rpc AppendEntries(AppendEntriesRequest) returns (AppendEntriesResponse);
+  rpc ExecuteCommand(CommandRequest) returns (CommandResponse);
 }

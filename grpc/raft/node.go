@@ -1,6 +1,7 @@
 package raft
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -176,6 +177,15 @@ func (n *Node) BecomeFollower(term int64) {
 	n.votedFor = nil
 }
 
+func (n *Node) leaderIDToAddress() string {
+	if n.leaderID == nil {
+		return ""
+	}
+	id := *n.leaderID
+	port := 50050 + id
+	return fmt.Sprintf("localhost:%d", port)
+}
+
 /*
 ========================================== gRPC Handlers ==========================================
 */
@@ -251,6 +261,29 @@ func (n *Node) HeartbeatRequest() AppendEntriesRequest {
 	return AppendEntriesRequest{
 		Term:     n.currentTerm,
 		LeaderID: n.id,
+	}
+}
+
+func (n *Node) ExecuteCommandResponse(cmd Command) ExecuteCommandResponse {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+
+	leaderAddress := n.leaderIDToAddress()
+
+	if n.role != Leader {
+		return ExecuteCommandResponse{
+			Success:       false,
+			Message:       nil,
+			LeaderAddress: &leaderAddress,
+		}
+	}
+
+	message := "success"
+
+	return ExecuteCommandResponse{
+		Success:       true,
+		Message:       &message,
+		LeaderAddress: nil,
 	}
 }
 

@@ -46,3 +46,17 @@ func (s *NodeService) AppendEntries(
 
 	return response.ToProto(), nil
 }
+
+func (s *NodeService) ExecuteCommand(
+	ctx context.Context,
+	req *proto.CommandRequest,
+) (*proto.CommandResponse, error) {
+	command, err := raft.CommandFromProto(req.Command)
+	if err != nil {
+		return nil, err
+	}
+	response := s.node.ExecuteCommandResponse(command)
+	s.logger.Info("Received command", "command", req.Command, "success", response.Success)
+
+	return response.ToProto(), nil
+}
