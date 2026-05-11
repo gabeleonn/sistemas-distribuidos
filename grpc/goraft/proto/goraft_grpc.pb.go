@@ -19,7 +19,6 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Node_Ping_FullMethodName          = "/proto.Node/Ping"
 	Node_RequestVote_FullMethodName   = "/proto.Node/RequestVote"
 	Node_AppendEntries_FullMethodName = "/proto.Node/AppendEntries"
 )
@@ -28,7 +27,6 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type NodeClient interface {
-	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
 	RequestVote(ctx context.Context, in *RequestVoteRequest, opts ...grpc.CallOption) (*RequestVoteResponse, error)
 	AppendEntries(ctx context.Context, in *AppendEntriesRequest, opts ...grpc.CallOption) (*AppendEntriesResponse, error)
 }
@@ -39,16 +37,6 @@ type nodeClient struct {
 
 func NewNodeClient(cc grpc.ClientConnInterface) NodeClient {
 	return &nodeClient{cc}
-}
-
-func (c *nodeClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(PingResponse)
-	err := c.cc.Invoke(ctx, Node_Ping_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *nodeClient) RequestVote(ctx context.Context, in *RequestVoteRequest, opts ...grpc.CallOption) (*RequestVoteResponse, error) {
@@ -75,7 +63,6 @@ func (c *nodeClient) AppendEntries(ctx context.Context, in *AppendEntriesRequest
 // All implementations must embed UnimplementedNodeServer
 // for forward compatibility.
 type NodeServer interface {
-	Ping(context.Context, *PingRequest) (*PingResponse, error)
 	RequestVote(context.Context, *RequestVoteRequest) (*RequestVoteResponse, error)
 	AppendEntries(context.Context, *AppendEntriesRequest) (*AppendEntriesResponse, error)
 	mustEmbedUnimplementedNodeServer()
@@ -88,9 +75,6 @@ type NodeServer interface {
 // pointer dereference when methods are called.
 type UnimplementedNodeServer struct{}
 
-func (UnimplementedNodeServer) Ping(context.Context, *PingRequest) (*PingResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Ping not implemented")
-}
 func (UnimplementedNodeServer) RequestVote(context.Context, *RequestVoteRequest) (*RequestVoteResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RequestVote not implemented")
 }
@@ -116,24 +100,6 @@ func RegisterNodeServer(s grpc.ServiceRegistrar, srv NodeServer) {
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&Node_ServiceDesc, srv)
-}
-
-func _Node_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PingRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(NodeServer).Ping(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Node_Ping_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NodeServer).Ping(ctx, req.(*PingRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _Node_RequestVote_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -179,10 +145,6 @@ var Node_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "proto.Node",
 	HandlerType: (*NodeServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "Ping",
-			Handler:    _Node_Ping_Handler,
-		},
 		{
 			MethodName: "RequestVote",
 			Handler:    _Node_RequestVote_Handler,

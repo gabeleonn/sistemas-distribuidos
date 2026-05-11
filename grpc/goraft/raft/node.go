@@ -33,8 +33,9 @@ type State struct {
 type Node struct {
 	mu sync.RWMutex
 
-	id   int64
-	role Role
+	id       int64
+	role     Role
+	leaderID *int64
 
 	currentTerm int64
 	votedFor    *int64
@@ -166,6 +167,10 @@ func (n *Node) BecomeFollower(term int64) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
 
+	if term <= n.currentTerm {
+		return
+	}
+
 	n.role = Follower
 	n.currentTerm = term
 	n.votedFor = nil
@@ -216,7 +221,7 @@ func (n *Node) CandidateRequest() RequestVoteRequest {
 	}
 }
 
-func (n *Node) AppendEntriesResponse(req AppendEntriesRequest) AppendEntriesResponse {
+func (n *Node) HeartbeatResponse(req AppendEntriesRequest) AppendEntriesResponse {
 	n.mu.Lock()
 	defer n.mu.Unlock()
 
@@ -233,6 +238,8 @@ func (n *Node) AppendEntriesResponse(req AppendEntriesRequest) AppendEntriesResp
 	}
 
 	n.role = Follower
+	leaderID := req.LeaderID
+	n.leaderID = &leaderID
 
 	return AppendEntriesResponse{
 		Term:    n.currentTerm,
@@ -240,7 +247,7 @@ func (n *Node) AppendEntriesResponse(req AppendEntriesRequest) AppendEntriesResp
 	}
 }
 
-func (n *Node) AppendEntriesRequest() AppendEntriesRequest {
+func (n *Node) HeartbeatRequest() AppendEntriesRequest {
 	return AppendEntriesRequest{
 		Term:     n.currentTerm,
 		LeaderID: n.id,

@@ -32,7 +32,7 @@ type Application struct {
 	listener net.Listener
 	node     *raft.Node
 
-	heartbeat chan struct{}
+	electionReset chan struct{}
 }
 
 /*
@@ -41,23 +41,20 @@ type Application struct {
 ==========================================================================================================
 */
 func (app *Application) Run(ctx context.Context) error {
-	if err := app.openPeerConnections(); err != nil {
-		return err
-	}
 	defer app.closePeerConnections()
 	defer app.listener.Close()
 
 	errChannel := make(chan error, 1)
 
 	go func() {
+		app.logger.Info(
+			"Starting gRPC server",
+			"addr", app.config.Addr,
+		)
 		if err := app.server.Serve(app.listener); err != nil {
 			errChannel <- err
 		}
 	}()
-
-	if err := app.waitForPeers(ctx); err != nil {
-		return err
-	}
 
 	go app.runRaftLifecycle(ctx)
 
@@ -71,22 +68,6 @@ func (app *Application) Run(ctx context.Context) error {
 	}
 }
 
-func (app *Application) openPeerConnections() error {
-	for i := range app.config.Peers {
-		p := &app.config.Peers[i]
-		if err := p.Open(); err != nil {
-			return err
-		}
-
-		app.logger.Debug(
-			"Connected to peer",
-			"peer_id", p.ID,
-			"peer_addr", p.Addr,
-		)
-	}
-	return nil
-}
-
 func (app *Application) closePeerConnections() {
 	for i := range app.config.Peers {
 		p := &app.config.Peers[i]
@@ -97,67 +78,6 @@ func (app *Application) closePeerConnections() {
 				"peer_addr", p.Addr,
 				"error", err,
 			)
-		}
-	}
-}
-
-func (app *Application) waitForPeers(ctx context.Context) error {
-	deadline := time.After(10 * time.Second)
-	ticker := time.NewTicker(200 * time.Millisecond)
-	defer ticker.Stop()
-
-	ready := make(map[int64]bool)
-
-	for {
-		if len(ready) == len(app.config.Peers) {
-			app.logger.Info(fmt.Sprintf("Server ready at %s", app.config.Addr))
-			return nil
-		}
-
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-
-		case <-deadline:
-			return fmt.Errorf("timeout waiting for peers")
-
-		case <-ticker.C:
-			for i := range app.config.Peers {
-				p := &app.config.Peers[i]
-
-				if ready[p.ID] {
-					continue
-				}
-
-				callCtx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
-
-				resp, err := p.Client.Ping(callCtx, &proto.PingRequest{
-					Message: "ping",
-					FromId:  app.config.ID,
-				})
-
-				cancel()
-
-				if err != nil {
-					app.logger.Debug(
-						"peer not ready yet",
-						"peer_id", p.ID,
-						"peer_addr", p.Addr,
-						"error", err.Error(),
-					)
-					continue
-				}
-
-				app.logger.Debug(
-					"peer is ready",
-					"peer_id", p.ID,
-					"peer_addr", p.Addr,
-					"message", resp.Message,
-					"from_id", resp.FromId,
-				)
-
-				ready[p.ID] = true
-			}
 		}
 	}
 }
@@ -221,7 +141,7 @@ func (app *Application) runFollower(ctx context.Context) {
 			timer.Stop()
 			return
 
-		case <-app.heartbeat:
+		case <-app.electionReset:
 			timer.Stop()
 			continue // reset election timer on heartbeat
 		case <-timer.C:
@@ -235,8 +155,15 @@ func (app *Application) runCandidate(ctx context.Context) {
 	req := app.node.CandidateRequest()
 	votes := app.requestVotes(ctx, req)
 
+	if app.node.Role() != raft.Candidate {
+		return
+	}
+
 	if votes >= app.config.majority() {
 		term := app.node.BecomeLeader()
+
+		req := app.node.HeartbeatRequest()
+		app.sendHeartBeats(ctx, req)
 
 		app.logger.Info(
 			"Becoming leader",
@@ -253,9 +180,11 @@ func (app *Application) runCandidate(ctx context.Context) {
 	case <-ctx.Done():
 		return
 
+	case <-app.electionReset:
+		return
+
 	case <-time.After(timeout):
 		app.node.BecomeCandidate()
-
 		return
 	}
 }
@@ -269,7 +198,7 @@ func (app *Application) runLeader(ctx context.Context) {
 		return
 
 	case <-ticker.C:
-		req := app.node.AppendEntriesRequest()
+		req := app.node.HeartbeatRequest()
 		app.sendHeartBeats(ctx, req)
 	}
 }
@@ -282,35 +211,55 @@ func (app *Application) runLeader(ctx context.Context) {
 
 func (app *Application) requestVotes(ctx context.Context, req raft.RequestVoteRequest) int {
 	votes := 1
+	majority := app.config.majority()
+
+	voteCh := make(chan bool, len(app.config.Peers))
+	termCh := make(chan int64, len(app.config.Peers))
 
 	for i := range app.config.Peers {
 		p := &app.config.Peers[i]
 
-		callContext, cancel := context.WithTimeout(ctx, 1*time.Millisecond)
+		go func(peer *peer.Peer) {
+			if err := p.EnsureConnected(); err != nil {
+				voteCh <- false
+				return
+			}
 
-		resp, err := p.Client.RequestVote(callContext, req.ToProto())
+			callContext, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
+			defer cancel()
 
-		cancel()
+			resp, err := p.Client.RequestVote(callContext, req.ToProto())
+			if err != nil {
+				voteCh <- false
+				return
+			}
 
-		if err != nil {
-			app.logger.Error(
-				"Error requesting vote from peer",
-				"peer_id", p.ID,
-				"peer_addr", p.Addr,
-				"error", err.Error(),
-			)
-			continue
-		}
+			if resp.Term > req.Term {
+				termCh <- resp.Term
+				return
+			}
 
-		app.logger.Info(
-			"Received vote response from peer",
-			"peer_id", p.ID,
-			"peer_addr", p.Addr,
-			"term", resp.Term,
-			"vote_granted", resp.VoteGranted,
-		)
-		if resp.VoteGranted {
-			votes++
+			voteCh <- resp.VoteGranted
+		}(p)
+	}
+
+	for responses := 0; responses < len(app.config.Peers); responses++ {
+		select {
+		case <-ctx.Done():
+			return votes
+
+		case term := <-termCh:
+			app.node.BecomeFollower(term)
+			return votes
+
+		case granted := <-voteCh:
+			if granted {
+				votes++
+			}
+
+			if votes >= majority {
+				return votes
+			}
 		}
 	}
 
@@ -323,6 +272,10 @@ func (app *Application) sendHeartBeats(ctx context.Context, req raft.AppendEntri
 	for i := range app.config.Peers {
 		p := &app.config.Peers[i]
 
+		if err := p.EnsureConnected(); err != nil {
+			continue
+		}
+
 		callContext, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
 
 		resp, err := p.Client.AppendEntries(callContext, req.ToProto())
@@ -330,12 +283,6 @@ func (app *Application) sendHeartBeats(ctx context.Context, req raft.AppendEntri
 		cancel()
 
 		if err != nil {
-			app.logger.Error(
-				"Error sending heartbeat to peer",
-				"peer_id", p.ID,
-				"peer_addr", p.Addr,
-				"error", err.Error(),
-			)
 			continue
 		}
 
@@ -374,7 +321,7 @@ func NewApplication(config Config, logger *slog.Logger) (*Application, error) {
 			StateMachine: storage,
 		}),
 
-		heartbeat: make(chan struct{}, 1),
+		electionReset: make(chan struct{}, 1),
 	}
 
 	proto.RegisterNodeServer(
@@ -384,7 +331,7 @@ func NewApplication(config Config, logger *slog.Logger) (*Application, error) {
 			logger,
 			func() {
 				select {
-				case app.heartbeat <- struct{}{}:
+				case app.electionReset <- struct{}{}:
 				default:
 				}
 			}),

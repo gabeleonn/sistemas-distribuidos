@@ -3,17 +3,6 @@ syntax = "proto3";
 package proto;
 option go_package = "giraft/proto;proto";
 
-/* ###################### PING ###################### */
-message PingRequest {
-  int64 from_id = 1;
-  string message = 2;
-}
-
-message PingResponse {
-  int64 from_id = 1;
-  string message = 2;
-}
-
 /* ###################### RequestVote ###################### */
 message RequestVoteRequest {
   int64 term = 1;
@@ -50,7 +39,6 @@ message AppendEntriesResponse {
 }
 
 service Node {
-  rpc Ping(PingRequest) returns (PingResponse);
   rpc RequestVote(RequestVoteRequest) returns (RequestVoteResponse);
   rpc AppendEntries(AppendEntriesRequest) returns (AppendEntriesResponse);
 }

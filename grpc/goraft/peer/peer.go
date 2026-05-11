@@ -14,8 +14,8 @@ type Peer struct {
 	Client proto.NodeClient
 }
 
-func (p *Peer) Open() error {
-	if p.Conn != nil {
+func (p *Peer) EnsureConnected() error {
+	if p.Conn != nil && p.Client != nil {
 		return nil
 	}
 

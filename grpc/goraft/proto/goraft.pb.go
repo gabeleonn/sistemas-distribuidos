@@ -21,111 +21,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// ###################### PING ######################
-type PingRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	FromId        int64                  `protobuf:"varint,1,opt,name=from_id,json=fromId,proto3" json:"from_id,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *PingRequest) Reset() {
-	*x = PingRequest{}
-	mi := &file_proto_goraft_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PingRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PingRequest) ProtoMessage() {}
-
-func (x *PingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_goraft_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PingRequest.ProtoReflect.Descriptor instead.
-func (*PingRequest) Descriptor() ([]byte, []int) {
-	return file_proto_goraft_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *PingRequest) GetFromId() int64 {
-	if x != nil {
-		return x.FromId
-	}
-	return 0
-}
-
-func (x *PingRequest) GetMessage() string {
-	if x != nil {
-		return x.Message
-	}
-	return ""
-}
-
-type PingResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	FromId        int64                  `protobuf:"varint,1,opt,name=from_id,json=fromId,proto3" json:"from_id,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *PingResponse) Reset() {
-	*x = PingResponse{}
-	mi := &file_proto_goraft_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PingResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PingResponse) ProtoMessage() {}
-
-func (x *PingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_goraft_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PingResponse.ProtoReflect.Descriptor instead.
-func (*PingResponse) Descriptor() ([]byte, []int) {
-	return file_proto_goraft_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *PingResponse) GetFromId() int64 {
-	if x != nil {
-		return x.FromId
-	}
-	return 0
-}
-
-func (x *PingResponse) GetMessage() string {
-	if x != nil {
-		return x.Message
-	}
-	return ""
-}
-
 // ###################### RequestVote ######################
 type RequestVoteRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -139,7 +34,7 @@ type RequestVoteRequest struct {
 
 func (x *RequestVoteRequest) Reset() {
 	*x = RequestVoteRequest{}
-	mi := &file_proto_goraft_proto_msgTypes[2]
+	mi := &file_proto_goraft_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -151,7 +46,7 @@ func (x *RequestVoteRequest) String() string {
 func (*RequestVoteRequest) ProtoMessage() {}
 
 func (x *RequestVoteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_goraft_proto_msgTypes[2]
+	mi := &file_proto_goraft_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -164,7 +59,7 @@ func (x *RequestVoteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RequestVoteRequest.ProtoReflect.Descriptor instead.
 func (*RequestVoteRequest) Descriptor() ([]byte, []int) {
-	return file_proto_goraft_proto_rawDescGZIP(), []int{2}
+	return file_proto_goraft_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *RequestVoteRequest) GetTerm() int64 {
@@ -205,7 +100,7 @@ type RequestVoteResponse struct {
 
 func (x *RequestVoteResponse) Reset() {
 	*x = RequestVoteResponse{}
-	mi := &file_proto_goraft_proto_msgTypes[3]
+	mi := &file_proto_goraft_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -217,7 +112,7 @@ func (x *RequestVoteResponse) String() string {
 func (*RequestVoteResponse) ProtoMessage() {}
 
 func (x *RequestVoteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_goraft_proto_msgTypes[3]
+	mi := &file_proto_goraft_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -230,7 +125,7 @@ func (x *RequestVoteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RequestVoteResponse.ProtoReflect.Descriptor instead.
 func (*RequestVoteResponse) Descriptor() ([]byte, []int) {
-	return file_proto_goraft_proto_rawDescGZIP(), []int{3}
+	return file_proto_goraft_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *RequestVoteResponse) GetTerm() int64 {
@@ -259,7 +154,7 @@ type LogEntry struct {
 
 func (x *LogEntry) Reset() {
 	*x = LogEntry{}
-	mi := &file_proto_goraft_proto_msgTypes[4]
+	mi := &file_proto_goraft_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -271,7 +166,7 @@ func (x *LogEntry) String() string {
 func (*LogEntry) ProtoMessage() {}
 
 func (x *LogEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_goraft_proto_msgTypes[4]
+	mi := &file_proto_goraft_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -284,7 +179,7 @@ func (x *LogEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogEntry.ProtoReflect.Descriptor instead.
 func (*LogEntry) Descriptor() ([]byte, []int) {
-	return file_proto_goraft_proto_rawDescGZIP(), []int{4}
+	return file_proto_goraft_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *LogEntry) GetTerm() int64 {
@@ -323,7 +218,7 @@ type AppendEntriesRequest struct {
 
 func (x *AppendEntriesRequest) Reset() {
 	*x = AppendEntriesRequest{}
-	mi := &file_proto_goraft_proto_msgTypes[5]
+	mi := &file_proto_goraft_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -335,7 +230,7 @@ func (x *AppendEntriesRequest) String() string {
 func (*AppendEntriesRequest) ProtoMessage() {}
 
 func (x *AppendEntriesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_goraft_proto_msgTypes[5]
+	mi := &file_proto_goraft_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -348,7 +243,7 @@ func (x *AppendEntriesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AppendEntriesRequest.ProtoReflect.Descriptor instead.
 func (*AppendEntriesRequest) Descriptor() ([]byte, []int) {
-	return file_proto_goraft_proto_rawDescGZIP(), []int{5}
+	return file_proto_goraft_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *AppendEntriesRequest) GetTerm() int64 {
@@ -403,7 +298,7 @@ type AppendEntriesResponse struct {
 
 func (x *AppendEntriesResponse) Reset() {
 	*x = AppendEntriesResponse{}
-	mi := &file_proto_goraft_proto_msgTypes[6]
+	mi := &file_proto_goraft_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -415,7 +310,7 @@ func (x *AppendEntriesResponse) String() string {
 func (*AppendEntriesResponse) ProtoMessage() {}
 
 func (x *AppendEntriesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_goraft_proto_msgTypes[6]
+	mi := &file_proto_goraft_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -428,7 +323,7 @@ func (x *AppendEntriesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AppendEntriesResponse.ProtoReflect.Descriptor instead.
 func (*AppendEntriesResponse) Descriptor() ([]byte, []int) {
-	return file_proto_goraft_proto_rawDescGZIP(), []int{6}
+	return file_proto_goraft_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *AppendEntriesResponse) GetTerm() int64 {
@@ -449,13 +344,7 @@ var File_proto_goraft_proto protoreflect.FileDescriptor
 
 const file_proto_goraft_proto_rawDesc = "" +
 	"\n" +
-	"\x12proto/goraft.proto\x12\x05proto\"@\n" +
-	"\vPingRequest\x12\x17\n" +
-	"\afrom_id\x18\x01 \x01(\x03R\x06fromId\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"A\n" +
-	"\fPingResponse\x12\x17\n" +
-	"\afrom_id\x18\x01 \x01(\x03R\x06fromId\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"\x95\x01\n" +
+	"\x12proto/goraft.proto\x12\x05proto\"\x95\x01\n" +
 	"\x12RequestVoteRequest\x12\x12\n" +
 	"\x04term\x18\x01 \x01(\x03R\x04term\x12!\n" +
 	"\fcandidate_id\x18\x02 \x01(\x03R\vcandidateId\x12$\n" +
@@ -477,9 +366,8 @@ const file_proto_goraft_proto_rawDesc = "" +
 	"\rleader_commit\x18\x06 \x01(\x03R\fleaderCommit\"E\n" +
 	"\x15AppendEntriesResponse\x12\x12\n" +
 	"\x04term\x18\x01 \x01(\x03R\x04term\x12\x18\n" +
-	"\asuccess\x18\x02 \x01(\bR\asuccess2\xc9\x01\n" +
-	"\x04Node\x12/\n" +
-	"\x04Ping\x12\x12.proto.PingRequest\x1a\x13.proto.PingResponse\x12D\n" +
+	"\asuccess\x18\x02 \x01(\bR\asuccess2\x98\x01\n" +
+	"\x04Node\x12D\n" +
 	"\vRequestVote\x12\x19.proto.RequestVoteRequest\x1a\x1a.proto.RequestVoteResponse\x12J\n" +
 	"\rAppendEntries\x12\x1b.proto.AppendEntriesRequest\x1a\x1c.proto.AppendEntriesResponseB\x14Z\x12giraft/proto;protob\x06proto3"
 
@@ -495,26 +383,22 @@ func file_proto_goraft_proto_rawDescGZIP() []byte {
 	return file_proto_goraft_proto_rawDescData
 }
 
-var file_proto_goraft_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_proto_goraft_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_proto_goraft_proto_goTypes = []any{
-	(*PingRequest)(nil),           // 0: proto.PingRequest
-	(*PingResponse)(nil),          // 1: proto.PingResponse
-	(*RequestVoteRequest)(nil),    // 2: proto.RequestVoteRequest
-	(*RequestVoteResponse)(nil),   // 3: proto.RequestVoteResponse
-	(*LogEntry)(nil),              // 4: proto.LogEntry
-	(*AppendEntriesRequest)(nil),  // 5: proto.AppendEntriesRequest
-	(*AppendEntriesResponse)(nil), // 6: proto.AppendEntriesResponse
+	(*RequestVoteRequest)(nil),    // 0: proto.RequestVoteRequest
+	(*RequestVoteResponse)(nil),   // 1: proto.RequestVoteResponse
+	(*LogEntry)(nil),              // 2: proto.LogEntry
+	(*AppendEntriesRequest)(nil),  // 3: proto.AppendEntriesRequest
+	(*AppendEntriesResponse)(nil), // 4: proto.AppendEntriesResponse
 }
 var file_proto_goraft_proto_depIdxs = []int32{
-	4, // 0: proto.AppendEntriesRequest.entries:type_name -> proto.LogEntry
-	0, // 1: proto.Node.Ping:input_type -> proto.PingRequest
-	2, // 2: proto.Node.RequestVote:input_type -> proto.RequestVoteRequest
-	5, // 3: proto.Node.AppendEntries:input_type -> proto.AppendEntriesRequest
-	1, // 4: proto.Node.Ping:output_type -> proto.PingResponse
-	3, // 5: proto.Node.RequestVote:output_type -> proto.RequestVoteResponse
-	6, // 6: proto.Node.AppendEntries:output_type -> proto.AppendEntriesResponse
-	4, // [4:7] is the sub-list for method output_type
-	1, // [1:4] is the sub-list for method input_type
+	2, // 0: proto.AppendEntriesRequest.entries:type_name -> proto.LogEntry
+	0, // 1: proto.Node.RequestVote:input_type -> proto.RequestVoteRequest
+	3, // 2: proto.Node.AppendEntries:input_type -> proto.AppendEntriesRequest
+	1, // 3: proto.Node.RequestVote:output_type -> proto.RequestVoteResponse
+	4, // 4: proto.Node.AppendEntries:output_type -> proto.AppendEntriesResponse
+	3, // [3:5] is the sub-list for method output_type
+	1, // [1:3] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
 	1, // [1:1] is the sub-list for extension extendee
 	0, // [0:1] is the sub-list for field type_name
@@ -531,7 +415,7 @@ func file_proto_goraft_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_goraft_proto_rawDesc), len(file_proto_goraft_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

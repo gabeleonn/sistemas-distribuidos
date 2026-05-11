@@ -23,13 +23,6 @@ func NewNodeService(node *raft.Node, logger *slog.Logger, onHeartbeat func()) *N
 	}
 }
 
-func (s *NodeService) Ping(ctx context.Context, req *proto.PingRequest) (*proto.PingResponse, error) {
-	return &proto.PingResponse{
-		Message: "pong",
-		FromId:  s.node.ID(),
-	}, nil
-}
-
 func (s *NodeService) RequestVote(
 	ctx context.Context,
 	req *proto.RequestVoteRequest,
@@ -45,7 +38,7 @@ func (s *NodeService) AppendEntries(
 	req *proto.AppendEntriesRequest,
 ) (*proto.AppendEntriesResponse, error) {
 	request := raft.AppendEntriesRequestFromProto(req)
-	response := s.node.AppendEntriesResponse(*request)
+	response := s.node.HeartbeatResponse(*request)
 
 	if response.Success {
 		s.onHeartbeat()
