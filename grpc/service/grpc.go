@@ -15,6 +15,9 @@ type NodeService struct {
 	logger      *slog.Logger
 	onHeartbeat func()
 	onCommand   func(ctx context.Context, entry raft.LogEntry) error
+	onStop      func()
+	onStart     func()
+	iddle       bool
 }
 
 func NewNodeService(
@@ -22,12 +25,17 @@ func NewNodeService(
 	logger *slog.Logger,
 	onHeartbeat func(),
 	onCommand func(ctx context.Context, entry raft.LogEntry) error,
+	onStop func(),
+	onStart func(),
 ) *NodeService {
 	return &NodeService{
 		node:        node,
 		logger:      logger,
 		onHeartbeat: onHeartbeat,
 		onCommand:   onCommand,
+		onStop:      onStop,
+		onStart:     onStart,
+		iddle:       false,
 	}
 }
 
@@ -35,8 +43,18 @@ func (s *NodeService) RequestVote(
 	ctx context.Context,
 	req *proto.RequestVoteRequest,
 ) (*proto.RequestVoteResponse, error) {
+	if s.iddle {
+		return &proto.RequestVoteResponse{
+			VoteGranted: false,
+		}, nil
+	}
+
 	request := raft.RequestVoteRequestFromProto(req)
 	vote := s.node.CandidateResponse(*request)
+
+	if vote.VoteGranted {
+		s.onHeartbeat()
+	}
 
 	return vote.ToProto(), nil
 }
@@ -45,6 +63,12 @@ func (s *NodeService) AppendEntries(
 	ctx context.Context,
 	req *proto.AppendEntriesRequest,
 ) (*proto.AppendEntriesResponse, error) {
+	if s.iddle {
+		return &proto.AppendEntriesResponse{
+			Success: false,
+		}, nil
+	}
+
 	request := raft.AppendEntriesRequestFromProto(req)
 	response := s.node.HeartbeatResponse(*request)
 
@@ -91,6 +115,25 @@ func (s *NodeService) ExecuteCommand(
 			return &proto.CommandResponse{
 				Success: true,
 				Message: message,
+			}, nil
+
+		case "STOP":
+			s.logger.Info("Received command", "command", req.Command, "success", true)
+			s.iddle = true
+			s.onStop()
+
+			return &proto.CommandResponse{
+				Success: true,
+				Message: "stopping node",
+			}, nil
+		case "START":
+			s.logger.Info("Received command", "command", req.Command, "success", true)
+			s.iddle = false
+			s.onStart()
+
+			return &proto.CommandResponse{
+				Success: true,
+				Message: "starting node",
 			}, nil
 
 		default:

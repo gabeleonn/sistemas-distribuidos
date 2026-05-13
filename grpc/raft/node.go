@@ -150,6 +150,20 @@ func (n *Node) PreviousLogInfo(index int64) (int64, int64, error) {
 	return prevLogIndex, prevLogTerm, nil
 }
 
+func (n *Node) GetLastLog() LogEntry {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+
+	if len(n.log) == 0 {
+		return LogEntry{
+			Index: 0,
+			Term:  0,
+		}
+	}
+
+	return n.log[len(n.log)-1]
+}
+
 /*
 ========================================== Setters ==========================================
 */
@@ -270,7 +284,18 @@ func (n *Node) CandidateResponse(req RequestVoteRequest) RequestVoteResponse {
 		n.votedFor = nil
 	}
 
-	if n.votedFor == nil || *n.votedFor == req.CandidateID {
+	var lastLogEntry LogEntry
+	if len(n.log) == 0 {
+		lastLogEntry = LogEntry{Index: 0, Term: 0}
+	} else {
+		lastLogEntry = n.log[len(n.log)-1]
+	}
+	isCandidateUpToDate := req.LastLogTerm > lastLogEntry.Term ||
+		(req.LastLogTerm == lastLogEntry.Term && req.LastLogIndex >= lastLogEntry.Index)
+
+	canVote := (n.votedFor == nil || *n.votedFor == req.CandidateID) && isCandidateUpToDate
+
+	if canVote {
 		n.votedFor = &req.CandidateID
 
 		return RequestVoteResponse{
@@ -289,9 +314,18 @@ func (n *Node) CandidateRequest() RequestVoteRequest {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
 
+	var lastLog LogEntry
+	if len(n.log) == 0 {
+		lastLog = LogEntry{Index: 0, Term: 0}
+	} else {
+		lastLog = n.log[len(n.log)-1]
+	}
+
 	return RequestVoteRequest{
-		Term:        n.currentTerm,
-		CandidateID: n.id,
+		Term:         n.currentTerm,
+		CandidateID:  n.id,
+		LastLogIndex: lastLog.Index,
+		LastLogTerm:  lastLog.Term,
 	}
 }
 

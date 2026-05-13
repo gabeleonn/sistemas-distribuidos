@@ -43,7 +43,7 @@ var clusterCommand = &cobra.Command{
 }
 
 func init() {
-	clusterCommand.Flags().IntP("nodes", "n", 3, "Número de nós no cluster Raft")
+	clusterCommand.Flags().IntP("nodes", "n", 4, "Número de nós no cluster Raft")
 	rootCommand.AddCommand(clusterCommand)
 }
 

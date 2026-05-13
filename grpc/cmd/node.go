@@ -69,8 +69,11 @@ var serverCommand = &cobra.Command{
 func init() {
 	serverCommand.Flags().IntP("id", "i", 0, "ID do nó Raft")
 	serverCommand.Flags().StringP("addr", "a", "localhost:50050", "Endereço do nó Raft")
-	serverCommand.Flags().
-		StringSliceP("peers", "r", []string{}, "Peers do nó Raft no formato id:addr (ex: 1=localhost:50051,2=localhost:50052)")
+	serverCommand.Flags().StringSliceP(
+		"peers",
+		"r",
+		[]string{}, "Peers do nó Raft no formato id:addr (ex: 1=localhost:50051,2=localhost:50052)",
+	)
 	rootCommand.AddCommand(serverCommand)
 }
 

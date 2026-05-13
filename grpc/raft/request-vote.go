@@ -3,8 +3,10 @@ package raft
 import "goraft/proto"
 
 type RequestVoteRequest struct {
-	Term        int64
-	CandidateID int64
+	Term         int64
+	CandidateID  int64
+	LastLogIndex int64
+	LastLogTerm  int64
 }
 
 type RequestVoteResponse struct {
@@ -14,8 +16,10 @@ type RequestVoteResponse struct {
 
 func (rv *RequestVoteRequest) ToProto() *proto.RequestVoteRequest {
 	return &proto.RequestVoteRequest{
-		Term:        rv.Term,
-		CandidateId: rv.CandidateID,
+		Term:         rv.Term,
+		CandidateId:  rv.CandidateID,
+		LastLogIndex: rv.LastLogIndex,
+		LastLogTerm:  rv.LastLogTerm,
 	}
 }
 

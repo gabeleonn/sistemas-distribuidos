@@ -10,6 +10,7 @@ import (
 	"goraft/store"
 	"log/slog"
 	"net"
+	"sync/atomic"
 	"time"
 
 	"google.golang.org/grpc"
@@ -33,6 +34,8 @@ type Application struct {
 	node     *raft.Node
 
 	electionReset chan struct{}
+	stopped       atomic.Bool
+	startCh       chan struct{}
 }
 
 /*
@@ -116,6 +119,17 @@ func (app *Application) runRaftLifecycle(ctx context.Context) {
 		default:
 		}
 
+		if app.stopped.Load() {
+			app.logger.Info("node paused, waiting for START")
+			select {
+			case <-app.startCh:
+				app.logger.Info("node resumed")
+			case <-ctx.Done():
+				return
+			}
+			continue
+		}
+
 		role := app.node.Role()
 
 		switch role {
@@ -143,7 +157,10 @@ func (app *Application) runFollower(ctx context.Context) {
 
 		case <-app.electionReset:
 			timer.Stop()
-			continue // reset election timer on heartbeat
+			if app.stopped.Load() {
+				return
+			}
+			continue
 		case <-timer.C:
 			app.node.BecomeCandidate()
 			return
@@ -190,6 +207,10 @@ func (app *Application) runCandidate(ctx context.Context) {
 }
 
 func (app *Application) runLeader(ctx context.Context) {
+	if app.stopped.Load() {
+		return
+	}
+
 	ticker := time.NewTicker(50 * time.Millisecond)
 	defer ticker.Stop()
 
@@ -389,6 +410,22 @@ func (app *Application) sendAppendEntries(ctx context.Context, entry raft.LogEnt
 =============================================================================================
 */
 
+func (app *Application) Pause() {
+	app.stopped.Store(true)
+	select {
+	case app.electionReset <- struct{}{}:
+	default:
+	}
+}
+
+func (app *Application) Resume() {
+	app.stopped.Store(false)
+	select {
+	case app.startCh <- struct{}{}:
+	default:
+	}
+}
+
 func NewApplication(config Config, logger *slog.Logger) (*Application, error) {
 	listener, err := net.Listen("tcp", config.Addr)
 	if err != nil {
@@ -408,6 +445,7 @@ func NewApplication(config Config, logger *slog.Logger) (*Application, error) {
 		}),
 
 		electionReset: make(chan struct{}, 1),
+		startCh:       make(chan struct{}, 1),
 	}
 
 	proto.RegisterNodeServer(
@@ -424,6 +462,8 @@ func NewApplication(config Config, logger *slog.Logger) (*Application, error) {
 			func(ctx context.Context, entry raft.LogEntry) error {
 				return app.sendAppendEntries(ctx, entry)
 			},
+			app.Pause,
+			app.Resume,
 		),
 	)
 
