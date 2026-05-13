@@ -31,8 +31,19 @@ func (s *Store) Apply(cmd raft.Command) error {
 func (s *Store) Get(key string) (string, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+
 	value, ok := s.data[key]
 	return value, ok
+}
+
+func (s *Store) GetAll() map[string]string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	copy := make(map[string]string)
+	for k, v := range s.data {
+		copy[k] = v
+	}
+	return copy
 }
 
 func (s *Store) set(key, value string) {

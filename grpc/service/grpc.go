@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"goraft/proto"
 	"goraft/raft"
 	"log/slog"
@@ -66,6 +67,40 @@ func (s *NodeService) ExecuteCommand(
 			Success: false,
 			Message: "invalid command format",
 		}, nil
+	}
+
+	if command.Type == "NODE" {
+		switch command.Key {
+		case "STATE":
+			state := s.node.GetState()
+			message := state.String()
+
+			s.logger.Info("Received command", "command", req.Command, "success", true)
+
+			return &proto.CommandResponse{
+				Success: true,
+				Message: message,
+			}, nil
+		case "STORE":
+			data := s.node.GetStoreState()
+			bytes, _ := json.MarshalIndent(data, "", " ")
+			message := string(bytes)
+
+			s.logger.Info("Received command", "command", req.Command, "success", true)
+
+			return &proto.CommandResponse{
+				Success: true,
+				Message: message,
+			}, nil
+
+		default:
+			s.logger.Info("Received command", "command", req.Command, "error", "unknown node command")
+
+			return &proto.CommandResponse{
+				Success: false,
+				Message: "unknown node command",
+			}, nil
+		}
 	}
 
 	if _, err := s.node.EnsureLeader(); err != nil {

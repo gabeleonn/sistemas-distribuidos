@@ -32,6 +32,22 @@ type State struct {
 	CommitIndex int64
 }
 
+func (s *State) String() string {
+	votedFor := "none"
+	if s.VotedFor != nil {
+		votedFor = fmt.Sprintf("%d", *s.VotedFor)
+	}
+	return fmt.Sprintf(
+		"Node %d - Role: %s, Term: %d, VotedFor: %s, LogLength: %d, CommitIndex: %d",
+		s.ID,
+		s.Role,
+		s.CurrentTerm,
+		votedFor,
+		len(s.Log),
+		s.CommitIndex,
+	)
+}
+
 // Node represents a Raft node in the cluster, containing its ID, role, term, and other relevant information.
 type Node struct {
 	mu sync.RWMutex
@@ -172,22 +188,11 @@ func (n *Node) GetState() State {
 	}
 }
 
-func (n *Node) EnsureLeader() (int64, error) {
+func (n *Node) GetStoreState() map[string]string {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
 
-	if n.role != Leader {
-		leaderAddress := "unknown"
-		if n.leaderID != nil {
-			id := *n.leaderID
-			port := 50050 + id
-			leaderAddress = fmt.Sprintf("localhost:%d", port)
-		}
-
-		return 0, fmt.Errorf("not the leader, redirect to %s", leaderAddress)
-	}
-
-	return n.currentTerm, nil
+	return n.stateMachine.GetAll()
 }
 
 /*
@@ -225,6 +230,24 @@ func (n *Node) BecomeFollower(term int64) {
 	n.role = Follower
 	n.currentTerm = term
 	n.votedFor = nil
+}
+
+func (n *Node) EnsureLeader() (int64, error) {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+
+	if n.role != Leader {
+		leaderAddress := "unknown"
+		if n.leaderID != nil {
+			id := *n.leaderID
+			port := 50050 + id
+			leaderAddress = fmt.Sprintf("localhost:%d", port)
+		}
+
+		return 0, fmt.Errorf("not the leader, redirect to %s", leaderAddress)
+	}
+
+	return n.currentTerm, nil
 }
 
 /*
@@ -292,6 +315,60 @@ func (n *Node) HeartbeatResponse(req AppendEntriesRequest) AppendEntriesResponse
 	leaderID := req.LeaderID
 	n.leaderID = &leaderID
 
+	if req.PrevLogIndex > 0 {
+		if req.PrevLogIndex > int64(len(n.log)) {
+			return AppendEntriesResponse{
+				Term:    n.currentTerm,
+				Success: false,
+			}
+		}
+
+		prevLog := n.log[req.PrevLogIndex-1]
+		if prevLog.Term != req.PrevLogTerm {
+			return AppendEntriesResponse{
+				Term:    n.currentTerm,
+				Success: false,
+			}
+		}
+	}
+
+	for _, entry := range req.Entries {
+		if entry.Index <= int64(len(n.log)) {
+			existingEntry := n.log[entry.Index-1]
+			if existingEntry.Term != entry.Term {
+				n.log = n.log[:entry.Index-1]
+				n.log = append(n.log, entry)
+			}
+
+			continue
+		}
+
+		n.log = append(n.log, entry)
+	}
+
+	if req.LeaderCommit > n.commitIndex {
+		lastLogIndex := int64(len(n.log))
+
+		if req.LeaderCommit < lastLogIndex {
+			n.commitIndex = req.LeaderCommit
+		} else {
+			n.commitIndex = lastLogIndex
+		}
+	}
+
+	for n.lastApplied < n.commitIndex {
+		n.lastApplied++
+
+		entry := n.log[n.lastApplied-1]
+
+		if err := n.stateMachine.Apply(entry.Command); err != nil {
+			return AppendEntriesResponse{
+				Term:    n.currentTerm,
+				Success: false,
+			}
+		}
+	}
+
 	return AppendEntriesResponse{
 		Term:    n.currentTerm,
 		Success: true,
@@ -299,9 +376,13 @@ func (n *Node) HeartbeatResponse(req AppendEntriesRequest) AppendEntriesResponse
 }
 
 func (n *Node) HeartbeatRequest() AppendEntriesRequest {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+
 	return AppendEntriesRequest{
-		Term:     n.currentTerm,
-		LeaderID: n.id,
+		Term:         n.currentTerm,
+		LeaderID:     n.id,
+		LeaderCommit: n.commitIndex,
 	}
 }
 
