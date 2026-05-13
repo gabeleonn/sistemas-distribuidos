@@ -177,10 +177,8 @@ func (app *Application) runCandidate(ctx context.Context) {
 	}
 
 	if votes >= app.config.majority() {
-		term := app.node.BecomeLeader()
-
-		req := app.node.HeartbeatRequest()
-		app.sendHeartBeats(ctx, req)
+		term := app.node.BecomeLeader(app.peerIDs())
+		app.sendHeartBeats(ctx)
 
 		app.logger.Info(
 			"Becoming leader",
@@ -219,8 +217,7 @@ func (app *Application) runLeader(ctx context.Context) {
 		return
 
 	case <-ticker.C:
-		req := app.node.HeartbeatRequest()
-		app.sendHeartBeats(ctx, req)
+		app.sendHeartBeats(ctx)
 	}
 }
 
@@ -292,7 +289,7 @@ func (app *Application) requestVotes(ctx context.Context, req raft.RequestVoteRe
 ========================================== Send Heartbeats ========================================
 ===================================================================================================
 */
-func (app *Application) sendHeartBeats(ctx context.Context, req raft.AppendEntriesRequest) {
+func (app *Application) sendHeartBeats(ctx context.Context) {
 	state := app.node.GetState()
 
 	for i := range app.config.Peers {
@@ -302,10 +299,10 @@ func (app *Application) sendHeartBeats(ctx context.Context, req raft.AppendEntri
 			continue
 		}
 
+		req := app.node.HeartbeatRequestForPeer(p.ID)
+
 		callContext, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
-
 		resp, err := p.Client.AppendEntries(callContext, req.ToProto())
-
 		cancel()
 
 		if err != nil {
@@ -318,7 +315,13 @@ func (app *Application) sendHeartBeats(ctx context.Context, req raft.AppendEntri
 				return
 			}
 
+			app.node.HandleAppendFailure(p.ID)
 			continue
+		}
+
+		if len(req.Entries) > 0 {
+			lastEntry := req.Entries[len(req.Entries)-1]
+			app.node.HandleAppendSuccess(p.ID, lastEntry.Index)
 		}
 	}
 }
@@ -409,6 +412,14 @@ func (app *Application) sendAppendEntries(ctx context.Context, entry raft.LogEnt
 ========================================== Helpers ==========================================
 =============================================================================================
 */
+
+func (app *Application) peerIDs() []int64 {
+	ids := make([]int64, len(app.config.Peers))
+	for i, p := range app.config.Peers {
+		ids[i] = p.ID
+	}
+	return ids
+}
 
 func (app *Application) Pause() {
 	app.stopped.Store(true)

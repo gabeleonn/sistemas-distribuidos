@@ -225,11 +225,18 @@ func (n *Node) BecomeCandidate() int64 {
 	return n.currentTerm
 }
 
-func (n *Node) BecomeLeader() int64 {
+func (n *Node) BecomeLeader(peerIDs []int64) int64 {
 	n.mu.Lock()
 	defer n.mu.Unlock()
 
 	n.role = Leader
+
+	lastLogIndex := int64(len(n.log))
+	for _, id := range peerIDs {
+		n.nextIndex[id] = lastLogIndex + 1
+		n.matchIndex[id] = 0
+	}
+
 	return n.currentTerm
 }
 
@@ -409,14 +416,52 @@ func (n *Node) HeartbeatResponse(req AppendEntriesRequest) AppendEntriesResponse
 	}
 }
 
-func (n *Node) HeartbeatRequest() AppendEntriesRequest {
+func (n *Node) HeartbeatRequestForPeer(peerID int64) AppendEntriesRequest {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
+
+	nextIdx := n.nextIndex[peerID]
+
+	var prevLogIndex, prevLogTerm int64
+	if nextIdx > 1 {
+		prevLogIndex = nextIdx - 1
+		if prevLogIndex <= int64(len(n.log)) {
+			prevLogTerm = n.log[prevLogIndex-1].Term
+		}
+	}
+
+	var entries []LogEntry
+	if nextIdx <= int64(len(n.log)) {
+		entries = make([]LogEntry, len(n.log[nextIdx-1:]))
+		copy(entries, n.log[nextIdx-1:])
+	}
 
 	return AppendEntriesRequest{
 		Term:         n.currentTerm,
 		LeaderID:     n.id,
+		PrevLogIndex: prevLogIndex,
+		PrevLogTerm:  prevLogTerm,
+		Entries:      entries,
 		LeaderCommit: n.commitIndex,
+	}
+}
+
+func (n *Node) HandleAppendSuccess(peerID int64, lastEntryIndex int64) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+
+	if lastEntryIndex >= n.nextIndex[peerID] {
+		n.nextIndex[peerID] = lastEntryIndex + 1
+		n.matchIndex[peerID] = lastEntryIndex
+	}
+}
+
+func (n *Node) HandleAppendFailure(peerID int64) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+
+	if n.nextIndex[peerID] > 1 {
+		n.nextIndex[peerID]--
 	}
 }
 
