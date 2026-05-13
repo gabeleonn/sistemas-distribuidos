@@ -12,7 +12,6 @@ type Store struct {
 	data map[string]string
 }
 
-// Apply applies a command to the store, modifying its state accordingly. It returns an error if the command is invalid or cannot be applied.
 func (s *Store) Apply(cmd raft.Command) error {
 	switch cmd.Type {
 	case raft.SET:
@@ -29,7 +28,6 @@ func (s *Store) Apply(cmd raft.Command) error {
 	return nil
 }
 
-// Get retrieves the value associated with a key from the store. It returns the value and a boolean indicating whether the key exists in the store.
 func (s *Store) Get(key string) (string, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

@@ -220,7 +220,7 @@ func (app *Application) requestVotes(ctx context.Context, req raft.RequestVoteRe
 		p := &app.config.Peers[i]
 
 		go func(peer *peer.Peer) {
-			if err := p.EnsureConnected(); err != nil {
+			if err := peer.EnsureConnected(); err != nil {
 				voteCh <- false
 				return
 			}
@@ -228,7 +228,7 @@ func (app *Application) requestVotes(ctx context.Context, req raft.RequestVoteRe
 			callContext, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
 			defer cancel()
 
-			resp, err := p.Client.RequestVote(callContext, req.ToProto())
+			resp, err := peer.Client.RequestVote(callContext, req.ToProto())
 			if err != nil {
 				voteCh <- false
 				return
@@ -266,6 +266,11 @@ func (app *Application) requestVotes(ctx context.Context, req raft.RequestVoteRe
 	return votes
 }
 
+/*
+===================================================================================================
+========================================== Send Heartbeats ========================================
+===================================================================================================
+*/
 func (app *Application) sendHeartBeats(ctx context.Context, req raft.AppendEntriesRequest) {
 	state := app.node.GetState()
 
@@ -295,6 +300,87 @@ func (app *Application) sendHeartBeats(ctx context.Context, req raft.AppendEntri
 			continue
 		}
 	}
+}
+
+/*
+===================================================================================================
+======================================== Send Append Entries ======================================
+===================================================================================================
+*/
+func (app *Application) sendAppendEntries(ctx context.Context, entry raft.LogEntry) error {
+	prevLogIndex, prevLogTerm, err := app.node.PreviousLogInfo(entry.Index)
+	if err != nil {
+		return err
+	}
+
+	state := app.node.GetState()
+
+	request := raft.NewAppendEntriesRequest(
+		state.CurrentTerm,
+		state.ID,
+		prevLogIndex,
+		prevLogTerm,
+		[]raft.LogEntry{entry},
+		state.CommitIndex,
+	)
+
+	majority := app.config.majority()
+	successCh := make(chan bool, len(app.config.Peers))
+	doneCh := make(chan struct{}, 1)
+
+	for i := range app.config.Peers {
+		p := &app.config.Peers[i]
+
+		go func(peer *peer.Peer) {
+			if err := peer.EnsureConnected(); err != nil {
+				successCh <- false
+				return
+			}
+
+			callContext, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
+			defer cancel()
+
+			resp, err := peer.Client.AppendEntries(callContext, request.ToProto())
+			if err != nil {
+				successCh <- false
+				return
+			}
+
+			if resp.Term > state.CurrentTerm {
+				app.node.BecomeFollower(resp.Term)
+				select {
+				case doneCh <- struct{}{}:
+				default:
+				}
+				return
+			}
+
+			successCh <- resp.Success
+		}(p)
+	}
+
+	successCount := 1
+
+	for responses := 0; responses < len(app.config.Peers); responses++ {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("context cancelled")
+
+		case <-doneCh:
+			return fmt.Errorf("stepping down to follower")
+
+		case success := <-successCh:
+			if success {
+				successCount++
+			}
+
+			if successCount >= majority {
+				return nil
+			}
+		}
+	}
+
+	return fmt.Errorf("failed to replicate log entry to majority of peers")
 }
 
 /*
@@ -334,7 +420,11 @@ func NewApplication(config Config, logger *slog.Logger) (*Application, error) {
 				case app.electionReset <- struct{}{}:
 				default:
 				}
-			}),
+			},
+			func(ctx context.Context, entry raft.LogEntry) error {
+				return app.sendAppendEntries(ctx, entry)
+			},
+		),
 	)
 
 	return &app, nil

@@ -24,10 +24,6 @@ def main():
             print(f"OK: {response.message}")
         else:
             msg = response.message
-            if len(response.leader_address) > 0:
-                msg += f" (leader: {response.leader_address})"
-            else:
-                msg += " (no leader information)"
             print(f"FAIL: {msg}")
 
     except grpc.RpcError as err:

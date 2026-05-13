@@ -23,11 +23,13 @@ const (
 )
 
 type State struct {
-	ID          int64
-	Role        Role
+	ID       int64
+	Role     Role
+	VotedFor *int64
+
 	CurrentTerm int64
-	VotedFor    *int64
 	Log         []LogEntry
+	CommitIndex int64
 }
 
 // Node represents a Raft node in the cluster, containing its ID, role, term, and other relevant information.
@@ -115,6 +117,35 @@ func (n *Node) MatchIndex(peerID int64) int64 {
 	return n.matchIndex[peerID]
 }
 
+func (n *Node) PreviousLogInfo(index int64) (int64, int64, error) {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+
+	prevLogIndex := index - 1
+	if prevLogIndex == 0 {
+		return 0, 0, nil
+	}
+
+	if prevLogIndex < 0 || prevLogIndex > int64(len(n.log)) {
+		return 0, 0, fmt.Errorf("invalid log index: %d", prevLogIndex)
+	}
+
+	prevLogTerm := n.log[prevLogIndex-1].Term
+	return prevLogIndex, prevLogTerm, nil
+}
+
+/*
+========================================== Setters ==========================================
+*/
+func (n *Node) AppendLog(cmd Command) (LogEntry, error) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	currentIndex := int64(len(n.log)) + 1
+	logentry := NewLogEntry(currentIndex, n.currentTerm, cmd)
+	n.log = append(n.log, logentry)
+	return logentry, nil
+}
+
 /*
 ========================================== Snapshot ==========================================
 */
@@ -134,10 +165,29 @@ func (n *Node) GetState() State {
 	return State{
 		ID:          n.id,
 		Role:        n.role,
-		CurrentTerm: n.currentTerm,
 		VotedFor:    votedFor,
+		CurrentTerm: n.currentTerm,
 		Log:         logCopy,
+		CommitIndex: n.commitIndex,
 	}
+}
+
+func (n *Node) EnsureLeader() (int64, error) {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+
+	if n.role != Leader {
+		leaderAddress := "unknown"
+		if n.leaderID != nil {
+			id := *n.leaderID
+			port := 50050 + id
+			leaderAddress = fmt.Sprintf("localhost:%d", port)
+		}
+
+		return 0, fmt.Errorf("not the leader, redirect to %s", leaderAddress)
+	}
+
+	return n.currentTerm, nil
 }
 
 /*
@@ -175,15 +225,6 @@ func (n *Node) BecomeFollower(term int64) {
 	n.role = Follower
 	n.currentTerm = term
 	n.votedFor = nil
-}
-
-func (n *Node) leaderIDToAddress() string {
-	if n.leaderID == nil {
-		return ""
-	}
-	id := *n.leaderID
-	port := 50050 + id
-	return fmt.Sprintf("localhost:%d", port)
 }
 
 /*
@@ -264,26 +305,61 @@ func (n *Node) HeartbeatRequest() AppendEntriesRequest {
 	}
 }
 
-func (n *Node) ExecuteCommandResponse(cmd Command) ExecuteCommandResponse {
-	n.mu.Lock()
-	defer n.mu.Unlock()
-
-	leaderAddress := n.leaderIDToAddress()
+func (n *Node) ExecuteGetCommandResponse(cmd Command) ExecuteCommandResponse {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
 
 	if n.role != Leader {
+		leaderAddress := "unknown"
+		if n.leaderID != nil {
+			id := *n.leaderID
+			port := 50050 + id
+			leaderAddress = fmt.Sprintf("localhost:%d", port)
+		}
+
+		msg := fmt.Sprintf("not the leader, redirect to %s", leaderAddress)
+
 		return ExecuteCommandResponse{
-			Success:       false,
-			Message:       nil,
-			LeaderAddress: &leaderAddress,
+			Success: false,
+			Message: &msg,
 		}
 	}
 
-	message := "success"
+	response, _ := n.stateMachine.Get(cmd.Key)
+	return ExecuteCommandResponse{
+		Success: true,
+		Message: &response,
+	}
+}
+
+func (n *Node) ExecuteCommandResponse(logentry LogEntry) ExecuteCommandResponse {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+
+	if logentry.Index > n.commitIndex {
+		n.commitIndex = logentry.Index
+	}
+
+	for n.lastApplied < n.commitIndex {
+		n.lastApplied++
+
+		entry := n.log[n.lastApplied-1]
+
+		if err := n.stateMachine.Apply(entry.Command); err != nil {
+			msg := fmt.Sprintf("failed to apply command at index %d: %v", entry.Index, err)
+
+			return ExecuteCommandResponse{
+				Success: false,
+				Message: &msg,
+			}
+		}
+	}
+
+	message := "ok"
 
 	return ExecuteCommandResponse{
-		Success:       true,
-		Message:       &message,
-		LeaderAddress: nil,
+		Success: true,
+		Message: &message,
 	}
 }
 

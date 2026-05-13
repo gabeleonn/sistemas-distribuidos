@@ -46,7 +46,6 @@ message CommandRequest {
 message CommandResponse {
   bool success = 1;
   string message = 2;
-  string leader_address = 3;
 }
 
 service Node {

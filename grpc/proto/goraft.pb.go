@@ -389,7 +389,6 @@ type CommandResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
 	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	LeaderAddress string                 `protobuf:"bytes,3,opt,name=leader_address,json=leaderAddress,proto3" json:"leader_address,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -438,13 +437,6 @@ func (x *CommandResponse) GetMessage() string {
 	return ""
 }
 
-func (x *CommandResponse) GetLeaderAddress() string {
-	if x != nil {
-		return x.LeaderAddress
-	}
-	return ""
-}
-
 var File_proto_goraft_proto protoreflect.FileDescriptor
 
 const file_proto_goraft_proto_rawDesc = "" +
@@ -473,11 +465,10 @@ const file_proto_goraft_proto_rawDesc = "" +
 	"\x04term\x18\x01 \x01(\x03R\x04term\x12\x18\n" +
 	"\asuccess\x18\x02 \x01(\bR\asuccess\"*\n" +
 	"\x0eCommandRequest\x12\x18\n" +
-	"\acommand\x18\x01 \x01(\tR\acommand\"l\n" +
+	"\acommand\x18\x01 \x01(\tR\acommand\"E\n" +
 	"\x0fCommandResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\x12%\n" +
-	"\x0eleader_address\x18\x03 \x01(\tR\rleaderAddress2\xd9\x01\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage2\xd9\x01\n" +
 	"\x04Node\x12D\n" +
 	"\vRequestVote\x12\x19.proto.RequestVoteRequest\x1a\x1a.proto.RequestVoteResponse\x12J\n" +
 	"\rAppendEntries\x12\x1b.proto.AppendEntriesRequest\x1a\x1c.proto.AppendEntriesResponse\x12?\n" +

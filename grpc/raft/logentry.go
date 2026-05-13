@@ -30,3 +30,11 @@ func LogEntryFromProto(p *proto.LogEntry) (*LogEntry, error) {
 		Command: cmd,
 	}, nil
 }
+
+func NewLogEntry(index, term int64, command Command) LogEntry {
+	return LogEntry{
+		Index:   index,
+		Term:    term,
+		Command: command,
+	}
+}

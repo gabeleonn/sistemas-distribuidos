@@ -65,3 +65,21 @@ func AppendEntriesResponseFromProto(p *proto.AppendEntriesResponse) *AppendEntri
 		Success: p.Success,
 	}
 }
+
+func NewAppendEntriesRequest(
+	term int64,
+	leaderID int64,
+	prevLogIndex int64,
+	prevLogTerm int64,
+	entries []LogEntry,
+	leaderCommit int64,
+) *AppendEntriesRequest {
+	return &AppendEntriesRequest{
+		Term:         term,
+		LeaderID:     leaderID,
+		PrevLogIndex: prevLogIndex,
+		PrevLogTerm:  prevLogTerm,
+		Entries:      entries,
+		LeaderCommit: leaderCommit,
+	}
+}

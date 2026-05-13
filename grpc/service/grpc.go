@@ -13,13 +13,20 @@ type NodeService struct {
 	node        *raft.Node
 	logger      *slog.Logger
 	onHeartbeat func()
+	onCommand   func(ctx context.Context, entry raft.LogEntry) error
 }
 
-func NewNodeService(node *raft.Node, logger *slog.Logger, onHeartbeat func()) *NodeService {
+func NewNodeService(
+	node *raft.Node,
+	logger *slog.Logger,
+	onHeartbeat func(),
+	onCommand func(ctx context.Context, entry raft.LogEntry) error,
+) *NodeService {
 	return &NodeService{
 		node:        node,
 		logger:      logger,
 		onHeartbeat: onHeartbeat,
+		onCommand:   onCommand,
 	}
 }
 
@@ -53,9 +60,49 @@ func (s *NodeService) ExecuteCommand(
 ) (*proto.CommandResponse, error) {
 	command, err := raft.CommandFromProto(req.Command)
 	if err != nil {
-		return nil, err
+		s.logger.Info("Received command", "command", req.Command, "error", err.Error())
+
+		return &proto.CommandResponse{
+			Success: false,
+			Message: "invalid command format",
+		}, nil
 	}
-	response := s.node.ExecuteCommandResponse(command)
+
+	if _, err := s.node.EnsureLeader(); err != nil {
+		return &proto.CommandResponse{
+			Success: false,
+			Message: err.Error(),
+		}, nil
+	}
+
+	if command.Type == "GET" {
+		response := s.node.ExecuteGetCommandResponse(command)
+
+		s.logger.Info("Received command", "command", req.Command, "success", response.Success)
+
+		return response.ToProto(), nil
+	}
+
+	logentry, err := s.node.AppendLog(command)
+	if err != nil {
+		s.logger.Info("Received command", "command", req.Command, "error", err.Error())
+
+		return &proto.CommandResponse{
+			Success: false,
+			Message: err.Error(),
+		}, nil
+	}
+
+	if err := s.onCommand(ctx, logentry); err != nil {
+		s.logger.Info("Received command", "command", req.Command, "error", err.Error())
+
+		return &proto.CommandResponse{
+			Success: false,
+			Message: err.Error(),
+		}, nil
+	}
+
+	response := s.node.ExecuteCommandResponse(logentry)
 	s.logger.Info("Received command", "command", req.Command, "success", response.Success)
 
 	return response.ToProto(), nil

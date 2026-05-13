@@ -75,9 +75,8 @@ type ExecuteCommandRequest struct {
 }
 
 type ExecuteCommandResponse struct {
-	Success       bool
-	Message       *string // Value is returned for GET commands
-	LeaderAddress *string // Address of the current leader, if known
+	Success bool
+	Message *string // Value is returned for GET commands
 }
 
 func (r *ExecuteCommandResponse) ToProto() *proto.CommandResponse {
@@ -89,10 +88,6 @@ func (r *ExecuteCommandResponse) ToProto() *proto.CommandResponse {
 		resp.Message = *r.Message
 	}
 
-	if r.LeaderAddress != nil {
-		resp.LeaderAddress = *r.LeaderAddress
-	}
-
 	return resp
 }
 
@@ -102,14 +97,8 @@ func ExecuteCommandResponseFromProto(p *proto.CommandResponse) *ExecuteCommandRe
 		message = &p.Message
 	}
 
-	var leaderAddress *string
-	if p.LeaderAddress != "" {
-		leaderAddress = &p.LeaderAddress
-	}
-
 	return &ExecuteCommandResponse{
-		Success:       p.Success,
-		Message:       message,
-		LeaderAddress: leaderAddress,
+		Success: p.Success,
+		Message: message,
 	}
 }
