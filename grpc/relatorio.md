@@ -18,3 +18,6 @@ De forma mais geral os problemas podem aparecer como:
 - Liderança simultânea
 - Livelock (ex.: troca constante de líder, sem progresso)
 - Deadlocks
+
+### Como o uso de Protocol Buffers e gRPC possibilita essa interoperabilidade?
+O gRPC é um framework de RPC moderno que usa Protobuf como linguagem de definição de interface (IDL). Ambos são agnósticos de linguagem: o mesmo .proto gera stubs para o cliente (em uma linguagem) e para os nós Raft (em outra). A comunicação acontece sobre HTTP/2 com serialização binária.
